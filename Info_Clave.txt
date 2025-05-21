@@ -1,0 +1,235 @@
+# Información Clave del Proyecto Zenda y Configuración de Context Caching en Vertex AI
+
+Este archivo contiene la información esencial sobre la configuración y uso de Vertex AI Context Caching (CC) para modelos Gemini 2.5 en el proyecto Zenda, basada en las pruebas realizadas y el documento "Zenda 7.docx".
+
+**1. Información General del Proyecto Zenda (Relevante para CC)**
+
+* **Propósito:** Servicio de asistencia conversacional con IA.
+* **Arquitectura Relevante:** Uso de agentes (DT, Zenda) y gestión de contexto/memoria (ADK State, Memoria Larga, y ahora Context Caching).
+* **Documento Base:** "Zenda 7.docx" (Nota: El MVP original posponía CC explícito, pero confirmamos que ahora funciona).
+* **Objetivo Específico de esta Implementación:** Integrar y usar Vertex AI Context Caching para proporcionar contexto extenso a los modelos Gemini.
+
+**2. Configuración del Entorno y GCP**
+
+* **Plataforma Cloud:** Google Cloud Platform (GCP).
+* **Servicio Principal de IA:** Vertex AI (para modelos Gemini y Context Caching).
+* **Tu Project ID de GCP:** `zenda-adk`
+* **Región de Vertex AI para CC:** `us-central1` (Esta región es necesaria para usar Context Caching).
+* **Modelo Gemini Usado para CC:** `gemini-2.5-pro-preview-05-06` (Confirmamos que este modelo soporta CC en `us-central1`).
+* **Librerías Python Necesarias:**
+    * `google-genai`: La librería principal para interactuar con la API de CC y generación.
+    * `vertexai`: Usada para la inicialización del entorno GCP al inicio.
+* **Instalación:** Asegúrate de tener Python 3.10+ o 3.11+ y la librería instalada (`pip install --upgrade google-genai`).
+* **Autenticación GCP:** Tu entorno debe estar autenticado con GCP (ej. `gcloud auth application-default login` si es local, o automáticamente en Vertex AI Workbench si está configurado).
+
+**3. Conceptos Clave del Context Caching en Vertex AI**
+
+* **Qué es:** Un recurso en Vertex AI que almacena contenido extenso (texto, código, etc.) para ser reutilizado eficientemente como contexto en llamadas a modelos (como Gemini 1.5/2.5).
+* **Propósito en Zenda:** Almacenar pautas, definiciones de especialidades, resúmenes históricos, etc., para que el agente Zenda (LLM) tenga acceso a esta información sin tener que incluirla repetidamente en cada prompt completo, reduciendo costos y latencia.
+* **Tamaño Mínimo de Contenido:** Para que el caching explícito funcione, el contenido que guardas debe tener al menos 1024 tokens.
+* **Tiempo de Vida (TTL):** Los recursos de caché tienen una duración limitada (por defecto 1 hora), especificada al crearlos. Deben recrearse o gestionarse si se necesitan por más tiempo.
+* **Recurso de Caché:** Al crear un caché, obtienes un objeto (`cached_content_resource` en nuestro código) que representa el recurso en Vertex AI. Su identificación principal es un nombre único (ej. `projects/zenda-adk/locations/us-central1/cachedContents/NUMERO_ID`).
+
+**4. Códigos Funcionando para Crear y Usar Context Caching**
+
+Aquí están los códigos Python esenciales que verificamos que funcionan para crear el caché y usarlo en una llamada básica al modelo. Estos códigos deben ejecutarse en celdas separadas de Jupyter en el orden presentado.
+
+**Código 1: Crear el Recurso Context Cache (Paso 2 Verificado)**
+
+* **Propósito:** Crear el recurso físico del caché en Vertex AI y obtener el objeto de referencia (`cached_content_resource`).
+* **Notas:** El `contenido_para_cachear` debe ser > 1024 tokens. Este código inicializa `vertexai` y luego usa `vertexai.preview.caching` para la creación.
+* **Este código define la variable `cached_content_resource` que se usa en el Código 2.** Debe ejecutarse antes que el Código 2.
+* **Tu último Cache ID exitoso fue:** `6036082441490268160`
+
+```python
+# Código 1: Crear el Recurso Context Cache
+
+import vertexai
+from vertexai.preview import caching
+from vertexai.generative_models import Part
+import datetime
+import os
+
+# --- Configuración ---
+PROJECT_ID = 'zenda-adk'
+LOCATION = "us-central1"
+MODEL_NAME = "gemini-2.5-pro-preview-05-06"
+
+# Contenido para cachear (Fragmento de Zenda 7 > 1024 tokens)
+contenido_para_cachear = """
+Zenda es un servicio de asistencia conversacional impulsado por inteligencia artificial (IA), orientado a personas que enfrentan desafíos personales, laborales o de desarrollo. El servicio ofrece sesiones estructuradas con un agente IA avanzado (Zenda) capaz de adaptar su enfoque simulando múltiples especialidades profesionales, guiado por protocolos claros (pautas) de acompañamiento, reflexión, observación emocional y evaluación del progreso. Es una mezcla de coaching, desarrollo personal y asesoramiento, operado 100% por agentes inteligentes. El sistema opera de manera autónoma, basado en un conjunto estructurado de pautas de intervención generales (con planes de incorporar pautas específicas post-MVP) y con mecanismos de calidad (Think Tool interno, QA post-sesión), seguridad y trazabilidad avanzados. Busca ofrecer una experiencia conversacional cálida, empática, útil y profesional.
+
+La arquitectura general (MVP) de Zenda se compone de un Backend Principal desplegado en Google Cloud Run, utilizando contenedores Docker y Python con el Google Agent Development Kit (ADK). La Base de Datos es Supabase (PostgreSQL), alojando toda la información persistente como clientes, entidades, pautas, bitácora, sesiones, temas y especialidades. Los Agentes de IA son orquestados por ADK. Para el MVP, la secuencia principal involucra al Agente DT (Director Técnico - LlmAgent), el Agente Zenda (Agente Conversacional Principal - LlmAgent con Think Tool interno) y el Agente QA (Agente de Calidad - LlmAgent avanzado). La Interfaz de Usuario (MVP) es una aplicación en Streamlit para interacción vía chat de texto y voz. Se integran Servicios de Voz con Gemini Speech-to-Text (STT) y Text-to-Speech (TTS). Para la gestión de contexto y estado, se utiliza ADK State (Session Scope) para datos dinámicos y Vertex AI Context Caching para datos estables/grandes (Pautas, Especialidades, Resumen Histórico), aunque la implementación explícita de este último fue ajustada para el MVP según la Sección 15.
+
+La Gestión de Contexto, Estado y Memoria (MVP) es crucial para el desempeño de Zenda. El ADK State (Session Scope) almacena contenido como Entidades Activas (personas, orgs, jargon, conceptos), Criterios Pautas (actualizados por DT cada turno), Tema Elegido, Especialidad Principal/Secundarias, Preferencias Usuario (leídas de clientes) e Información del turno actual (emoción detectada, flags de riesgo básicos). Se usa como memoria de trabajo rápida para la lógica de los agentes (DT, Zenda) durante la sesión, actualizándose dinámicamente. El Vertex AI Context Caching está diseñado para contener Contenido como Pautas Generales (completas, desde Supabase), Definiciones de Especialidades (~35, desde Supabase) y el Resumen Histórico Acumulativo (última versión pre-calculada, desde Supabase sesiones.historical_summary). Su uso es para contexto más estático y/o voluminoso cargado al inicio de sesión, consumido principalmente por el LLM de Zenda para proporcionar conocimiento de fondo y definiciones sin sobrecargar el prompt directo, gestionado con TTLs apropiados. La Estrategia de Memoria Larga se adopta mediante el enfoque de resumen incremental/acumulativo generado post-sesión. Al final de la sesión N, el proceso de QA Post-Sesión invoca un LLM económico para leer la bitácora de la sesión N y el resumen acumulativo de N-1, generando un nuevo resumen acumulativo N que integra ambos. Este nuevo resumen se guarda en un campo dedicado (ej., historical_summary de tipo TEXT o JSONB) en la tabla `sesiones` asociada a la sesión N. Al inicio de la sesión N+1, DT (vía retrieve_summary_tool) lee este campo de la sesión N y lo carga en Context Caching (en el plan original antes de los ajustes del MVP).
+
+El Manejo de Pautas (MVP) es fundamental. El MVP operará con el conjunto existente de ~166 pautas generales transversales (archivo Pautas.csv). Estas pautas deben ser validadas por expertos antes de usarse en el MVP. Se implementará el Mecanismo de Adherencia Obligatoria: lógica explícita en Zenda para identificar la pauta general más relevante, extraer campos clave (Accion, Como, Para) y generar un borrador de respuesta intentando cumplir estrictamente con el Como para lograr el Para. También se preparará la declaración de la pauta usada para QA. Las Pautas Pendientes incluyen desarrollar e implementar nuevas pautas específicas para guiar la fase inicial de cada sesión (Acuerdo de Sesión). Las pautas generales validadas se almacenarán en la tabla `pautas` de Supabase.
+
+El Manejo de Temas y Especialidades (MVP) implica Definiciones: Tema (problema/objetivo del cliente) y Especialidad (enfoque profesional Zenda, ~35 tipos). El flujo de inicio de sesión implica que Cliente expone, Zenda/DT ayudan a elegir Tema, DT consulta tabla temas (vía Tool) para obtener Especialidad(es) recomendadas, y DT actualiza State. Zenda usa Especialidad(es) del State para adaptar su prompt/estilo/persona base y ayudar a contextualizar la selección de pautas generales.
+
+El Manejo de Entidades y Contexto Específico (MVP) usa la tabla `entidades`. Su propósito MVP es almacenar actores relacionales (personas, orgs) Y contexto específico del cliente (Jerga, Conceptos, Proyectos Mencionados, etc.), no para Progreso/Objetivos en MVP. La estructura final (MVP) se basa en la imagen image_d0421e.png. Se usa tipo_entidad Extendido añadiendo valores como "Jargon", "Concepto", "ProyectoCliente". La Coordinación entidades_tool <-> ADK State implica que DT carga entidades activas iniciales en State, Zenda lee primero del State, entidades_tool maneja lectura/escritura en Supabase, y tras una escritura exitosa, Zenda actualiza la entidad correspondiente en el State. La Búsqueda Contextual Interna LLM (Optimizada) implica que Zenda usa su conocimiento interno LLM "on demand" para definir/explicar términos/conceptos, guardando (vía tools) SOLO información muy específica del cliente o muy recurrente como entidad de tipo "Jargon" o "Concepto".
+
+Finalmente, la sección Ajustes al Alcance del MVP (Sección 15) detalla simplificaciones. En lugar de muchos agentes complejos, el MVP usa dos principales (DT y Zenda) con flujo secuencial fijo. Se eliminó el uso explícito del servicio Vertex AI Context Caching del alcance del MVP, basando el contexto de sesión en el ADK State y en incluir contexto relevante directamente en el prompt de ZendaAgentMVP (Implicit Caching). La persistencia de datos de sesión se simplificó a escrituras periódicas a una tabla intermedia y una escritura síncrona completa al final, difiriendo la pipeline asíncrona completa (Pub/Sub + Worker). Funcionalidades avanzadas como análisis emocional multimodal y detección de riesgos sofisticada se difieren, manteniendo solo interacción por voz STT/TTS y análisis emocional basado en texto. El Think Tool como callback con segundo LLM se difiere, basando la adherencia a pautas en el prompt de Zenda y la validación post-sesión del Agente QA, con DT alertando internamente. La implementación de la base de datos se enfocó solo en las tablas y campos indispensables para el MVP. El manejo de la tabla de entidades se simplificó a tipos básicos (Persona, Organizacion), difiriendo tipos extendidos como "Jargon" y relaciones detalladas. El mapeo Tema-Especialidad usa datos estáticos simples en lugar de consulta dinámica a tablas de Supabase. El front-end se enfoca en el núcleo conversacional. El registro de eventos en la bitácora se limita a eventos clave de alto nivel. El soporte multi-lenguaje es básico a nivel de infraestructura. El monitoreo se enfoca en logging estructurado de eventos clave. El proceso de despliegue es manual. El manejo de errores se enfoca en registro y robustez básica. Se mantiene el uso estratégico de Pydantic. El front-end en Streamlit es la prioridad 1 para el MVP.
+"""
+
+# --- Inicializar Vertex AI ---
+try:
+    print(f"Inicializando Vertex AI para el proyecto '{PROJECT_ID}' en la región '{LOCATION}'...")
+    vertexai.init(project=PROJECT_ID, location=LOCATION)
+    print("Vertex AI inicializado correctamente.")
+except Exception as e:
+    print(f"Error al inicializar Vertex AI: {e}")
+    raise
+
+# --- Crear el Context Cache ---
+try:
+    print(f"Intentando crear el recurso Context Cache en Vertex AI con el modelo '{MODEL_NAME}' y contenido más largo...")
+    cached_content_resource = caching.CachedContent.create(
+        model_name=MODEL_NAME,
+        contents=[Part.from_text(contenido_para_cachear)],
+        ttl=datetime.timedelta(hours=1),
+        display_name="zenda-ejemplo-pauta-cache"
+    )
+    print("\n--- ¡Recurso Context Cache creado exitosamente! ---")
+    print(f"Nombre del recurso: {cached_content_resource.name}")
+    print(f"Fecha de creación: {cached_content_resource.create_time}")
+    print(f"Fecha de expiración: {cached_content_resource.expire_time}")
+    print(f"Modelo asociado: {cached_content_resource.model_name}")
+    try:
+        print(f"Tamaño del contenido cacheado (tokens): {cached_content_resource.token_count}")
+    except AttributeError:
+         print("Nota: No se pudo obtener el conteo de tokens directamente del objeto cached_content_resource.")
+    try:
+        print(f"Tamaño del contenido cacheado (bytes): {cached_content_resource.size_bytes}")
+    except AttributeError:
+         print("Nota: No se pudo obtener el tamaño en bytes directamente del objeto cached_content_resource.")
+
+except Exception as e:
+    print(f"\n--- Error al crear el Context Cache ---")
+    print(f"Mensaje de error: {e}")
+    print("Posibles causas: Permisos, modelo incorrecto, contenido < 1024 tokens, conexión.")
+
+
+
+
+___________________________________
+
+
+
+
+# Código 2: Usar el Recurso Context Cache en una Llamada al Modelo
+
+import os
+import google.genai
+from google.genai import types
+import vertexai # Necesario para inicializar y para pasar al cliente genai
+
+# --- Configuración (debe coincidir con el Código 1) ---
+PROJECT_ID = 'zenda-adk'
+LOCATION = "us-central1"
+MODEL_NAME = "gemini-2.5-pro-preview-05-06"
+
+# --- Asegurar que el recurso de caché esté disponible (Mandatorio) ---
+# La variable 'cached_content_resource' debe estar definida en esta sesión de Jupyter.
+
+# Si no está definida (ej. reiniciaste el kernel), puedes intentar recuperarla.
+# Descomenta el siguiente bloque y asegúrate de que el ID es correcto.
+# try:
+#     print("Intentando recuperar el recurso de caché por nombre (fallback)...")
+#     # ¡TU ÚLTIMO CACHE ID EXITOSO ES: 6036082441490268160 ! Confirma este número.
+#     cache_resource_id = '6036082441490268160'
+#     cache_resource_name_str = f"projects/{PROJECT_ID}/locations/{LOCATION}/cachedContents/{cache_resource_id}"
+#     genai_client_for_retrieval = google.genai.Client() # Cliente simple
+#     cached_content_resource = genai_client_for_retrieval.get_cached_content(name=cache_resource_name_str)
+#     print(f"Recurso recuperado: {cached_content_resource.name}")
+# except Exception as e:
+#     print(f"--- Error al recuperar recurso (fallback) ---")
+#     print(f"Mensaje: {e}")
+#     cached_content_resource = None # Aseguramos que quede None si falla
+
+# --- VERIFICACIÓN MANDATORIA ---
+if 'cached_content_resource' not in locals() or cached_content_resource is None:
+     print("\n--- ERROR FATAL: La variable 'cached_content_resource' NO está disponible. ---")
+     print("Debes ejecutar PRIMERO el 'Código 1: Crear el Recurso Context Cache' CON ÉXITO.")
+     print("O usar la opción de recuperación comentada si reiniciaste el kernel.")
+     exit() # Detiene la ejecución
+
+else:
+     print(f"\nRecurso de caché '{cached_content_resource.name}' encontrado. Procediendo...")
+
+
+# --- Inicializar Cliente google.genai (CORREGIDO) ---
+# Se inicializa el cliente pasándole la configuración de Vertex AI.
+genai_client = None # Inicializar a None por si falla el try
+try:
+    print(f"\nInicializando cliente google.genai para proyecto '{PROJECT_ID}' en región '{LOCATION}'...")
+    genai_client = google.genai.Client(
+        vertexai=vertexai, # Referencia al módulo vertexai inicializado
+        project=PROJECT_ID,
+        location=LOCATION
+    )
+    print("Cliente google.genai inicializado correctamente.")
+
+except Exception as e:
+    print(f"--- Error al inicializar cliente google.genai ---")
+    print(f"Mensaje de error: {e}")
+    print("Asegúrate de autenticación y permisos.")
+
+# --- Usar el Context Cache en llamada al modelo ---
+if genai_client: # Solo si el cliente se inicializó bien
+    try:
+        print(f"Intentando usar el caché '{cached_content_resource.name}' en llamada al modelo '{MODEL_NAME}'...")
+
+        prompt_usuario = """
+        Basándote EXCLUSIVAMENTE en la información que te fue proporcionada como contexto (el contenido cacheado),
+        describe brevemente:
+        1. ¿Qué es Zenda?
+        2. ¿Cuáles son los 3 agentes principales que lo componen?
+        3. ¿Qué mecanismos de gestión de contexto y memoria se mencionan?
+        Responde de forma concisa.
+        """
+
+        generation_config = types.GenerateContentConfig(
+            cached_content=cached_content_resource.name
+            # temperature=0.2, max_output_tokens=300 # Opcional
+        )
+
+        full_model_name = f"projects/{PROJECT_ID}/locations/{LOCATION}/publishers/google/models/{MODEL_NAME}"
+
+        print("Llamando al modelo generate_content con caché...")
+        response = genai_client.models.generate_content(
+            model=full_model_name,
+            contents=[{"text": prompt_usuario}],
+            config=generation_config
+        )
+
+        print("\n--- Respuesta del modelo usando el Context Cache ---")
+        try:
+            response_text = response.candidates[0].content.parts[0].text
+            print(response_text)
+        except Exception as e:
+            print(f"No se pudo extraer texto fácilmente: {e}")
+            print("Estructura completa de la respuesta:")
+            print(response)
+
+        print("\n--- Metadatos de uso ---")
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
+             print("Metadatos encontrados:")
+             # Iterar sobre atributos para mostrar (maneja warnings de Pydantic)
+             for attr in dir(response.usage_metadata):
+                 if not attr.startswith('_'):
+                     try:
+                         value = getattr(response.usage_metadata, attr)
+                         print(f"- {attr}: {value}")
+                     except Exception:
+                         print(f"- {attr}: [No se pudo obtener el valor]")
+        else:
+            print("No se encontraron metadatos detallados.")
+
+    except Exception as e:
+        print(f"\n--- Error al usar Context Cache en llamada al modelo ---")
+        print(f"Mensaje: {e}")
+        print("Posibles causas: Caché expirado, conexión, permisos, error del modelo.")
+
+else:
+    print("\nNo se pudo intentar la llamada al modelo porque el cliente 'genai_client' no se inicializó correctamente.")
