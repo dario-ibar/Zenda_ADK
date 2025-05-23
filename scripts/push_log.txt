@@ -2,3 +2,17 @@ Sin cambios para commitear - 2025-05-21 18:34:05
 Sin cambios para commitear - 2025-05-21 19:00:01
 Sin cambios para commitear - 2025-05-21 19:30:01
 Sin cambios para commitear - 2025-05-21 20:00:01
+[main 1516868] Auto-commit: 2025-05-22 15:00:01
+ 11 files changed, 1803 insertions(+), 1 deletion(-)
+ rename .ipynb_checkpoints/{Notebook-checkpoint.ipynb => MISC-checkpoint.ipynb} (100%)
+ rename Notebook.ipynb => MISC.ipynb (91%)
+ create mode 100644 notebooks/.ipynb_checkpoints/zenda_config-checkpoint.ipynb
+ create mode 100755 notebooks/notebook_template.ipynb
+ create mode 100644 notebooks/zenda_config.ipynb
+ create mode 100755 scripts/.ipynb_checkpoints/idle_shutdown-checkpoint.sh
+ create mode 100644 scripts/.ipynb_checkpoints/push_auto-checkpoint.sh
+ create mode 100644 scripts/idle_shutdown.log
+ create mode 100755 scripts/idle_shutdown.sh
+ create mode 100755 scripts/push_auto.sh
+ create mode 100644 scripts/push_log.txt
+fatal: could not read Username for 'https://github.com': No such device or address
