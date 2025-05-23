@@ -34,3 +34,11 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  create mode 100644 documentation/.ipynb_checkpoints/0 general-checkpoint.txt
  create mode 100644 documentation/0 general.txt
 fatal: could not read Username for 'https://github.com': No such device or address
+[main dc8606b] Auto-commit: 2025-05-23 16:00:02
+ 7 files changed, 794 insertions(+), 74 deletions(-)
+ rewrite agents/dt_agent.py (69%)
+ rewrite agents/qa_agent.py (83%)
+ rewrite agents/zenda_agent.py (68%)
+ create mode 100644 prompts/.ipynb_checkpoints/qa_system_prompt-checkpoint.md
+ create mode 100644 prompts/qa_system_prompt.md
+fatal: could not read Username for 'https://github.com': No such device or address
