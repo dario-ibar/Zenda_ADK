@@ -42,3 +42,21 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  create mode 100644 prompts/.ipynb_checkpoints/qa_system_prompt-checkpoint.md
  create mode 100644 prompts/qa_system_prompt.md
 fatal: could not read Username for 'https://github.com': No such device or address
+[main 8adda95] Auto-commit: 2025-05-23 17:00:01
+ 17 files changed, 1175 insertions(+), 25 deletions(-)
+ rewrite agents/.ipynb_checkpoints/dt_agent-checkpoint.py (69%)
+ create mode 100644 agents/.ipynb_checkpoints/qa_agent-checkpoint.py
+ create mode 100644 agents/dt_agent.py.save
+ create mode 100644 core/utils/.ipynb_checkpoints/prompt_utils-checkpoint.py
+ create mode 100644 documentation/.ipynb_checkpoints/Logica e Instrucciones-checkpoint.txt
+ create mode 100644 documentation/Logica e Instrucciones.txt
+ create mode 100644 prompts/.ipynb_checkpoints/dt_system_prompt-checkpoint.md
+ create mode 100644 prompts/.ipynb_checkpoints/zenda_system_prompt-checkpoint.md
+ create mode 100644 tools/.ipynb_checkpoints/bitacora_tool-checkpoint.py
+ create mode 100644 tools/.ipynb_checkpoints/retrieve_client_data_tool-checkpoint.py
+ create mode 100644 tools/bitacora_tool.py
+ create mode 100644 tools/emotion_detection_tool.py
+ create mode 100644 tools/entidades_tool.py
+ create mode 100644 tools/retrieve_client_data_tool.py
+ create mode 100644 tools/save_context_info_tool.py
+fatal: could not read Username for 'https://github.com': No such device or address
