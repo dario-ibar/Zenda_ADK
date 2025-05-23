@@ -29,3 +29,8 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  rename prompts/{dt_instruccion.txt => dt_system_prompt.md} (100%)
  create mode 100644 prompts/zenda_system_prompt.md
 fatal: could not read Username for 'https://github.com': No such device or address
+[main d3521be] Auto-commit: 2025-05-23 14:00:01
+ 4 files changed, 310 insertions(+)
+ create mode 100644 documentation/.ipynb_checkpoints/0 general-checkpoint.txt
+ create mode 100644 documentation/0 general.txt
+fatal: could not read Username for 'https://github.com': No such device or address
