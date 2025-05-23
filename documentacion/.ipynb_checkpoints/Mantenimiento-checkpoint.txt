@@ -1,0 +1,19 @@
+# Elementos a Mantener y Monitorear en Zenda
+
+Este documento lista los elementos del sistema que requieren mantenimiento periódico, actualización o monitoreo debido a su naturaleza configurable o a su dependencia de especificaciones externas (ej. valores de base de datos, pautas, etc.).
+
+## 1. Tipos de Evento (`EventType` Enum en `models/bitacora.py`)
+
+Estos valores corresponden a la columna `event_type` en la tabla `bitacora` de Supabase y a los tipos de eventos que los agentes pueden registrar.
+
+* `USER_MESSAGE` (mensaje del cliente)
+* `ZENDA_RESPONSE` (respuesta de Zenda)
+* `TOOL_CALL` (llamada a una herramienta)
+* `EMOTION_DETECTED` (detección de emoción)
+* `QA_AUDIT` (auditoría de QA)
+* `CLIENT_SPEAKER` (quien_habla - cliente, de contexto previo)
+* `ZENDA_SPEAKER` (quien_habla - Zenda, de contexto previo)
+* `EMO_SPEAKER` (quien_habla - emoción, de contexto previo)
+
+**Consideraciones de Mantenimiento:** Si se añaden nuevos tipos de eventos en la lógica de los agentes o en la base de datos, este `Enum` debe ser actualizado.
+
