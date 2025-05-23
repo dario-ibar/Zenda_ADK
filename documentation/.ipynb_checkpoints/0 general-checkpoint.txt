@@ -1,0 +1,141 @@
+Zenda Tecnica
+
+
+
+# Diseño del Sistema Zenda: Consolidación Completa (Generado por IA)
+
+Este documento es una **consolidación exhaustiva y detallada** de todas las decisiones de diseño conceptual, arquitectura, comportamiento de agentes, modelos de datos, métricas y estrategias validadas para el proyecto Zenda hasta la fecha. Su propósito es servir como una **fuente de verdad principal y un respaldo completo** de todo el conocimiento generado en las interacciones con la IA, mitigando la pérdida de contexto entre hilos de conversación.
+
+---
+
+## 1. Visión General y Filosofía Central de Zenda
+
+* **Propósito:** Servicio de asistencia conversacional con IA, empática y profesional, para superar desafíos personales/laborales o crecer personal/profesionalmente.
+* **Filosofía:** Facilitar reflexión y progreso del cliente, actuando como el "mejor profesional humano" en especialidades diversas.
+* **Core Diferencial:** Capacidad de Zenda para encarnar y operar desde el `know-how` inherente del LLM en disciplinas específicas, adaptando su enfoque y profundizando su asistencia.
+
+---
+
+## 2. Arquitectura de Agentes y Flujo (El "Cerebro" de Zenda)
+
+### 2.1. Agente DT (Director Técnico)
+* **Rol:** Ajustar dinámicamente la táctica de la sesión, preparar contexto y estado para Zenda. Es el **CEREBRO ESTRATÉGICO**. No interactúa con el cliente.
+* **Frecuencia:** Se ejecuta al **principio de CADA turno** de conversación.
+* **Entradas Clave:** Input reciente del cliente, `ADK State` (`SessionContext`), eventos ADK, Supabase (vía `FunctionTools`), `Vertex AI Context Caching` (CC).
+* **Responsabilidades Clave:**
+    * **Setup Inicial (Inicio de Sesión):** Consultar Supabase (cliente, `resumen_memoria_larga`), asegurar CC poblado (Pautas/Especialidades/`resumen_memoria_larga`), preparar `ADK State` (`SessionContext` inicial con tema, especialidades, preferencias, `criterios` iniciales).
+    * **Gestión Turno a Turno:** Re-evaluar estrategia, **actualizar `criterios`** en `SessionContext` para guiar a Zenda, decidir activación de Think Tool.
+    * **Función de "Rollback y Aprendizaje":** Registrar hallazgos y decisiones de ajuste estratégico en `bitácora` (`tipo: tec`, etiquetas específicas) para "aprendizaje en frío".
+* **Prompt (Conceptual - Ver `prompts/dt_system_prompt.md`):** Conciso, directo, enfocado en rol y objetivos.
+
+### 2.2. Agente Zenda (Conversacional)
+* **Rol:** Núcleo conversacional directo con el cliente. Responsable de la experiencia cálida, empática, útil y profesional.
+* **Frecuencia:** Se ejecuta en cada turno de conversación.
+* **Entradas Clave:** Input del cliente, `ADK State` (`SessionContext` de DT), CC, resultados de `FunctionTools`.
+* **Responsabilidades Clave:**
+    * **Adaptación y Personalización:** Ajustar prompt/estilo/persona según `especialidades`, `criterios`, `preferencias_usuario`.
+    * **Adherencia a Pautas (IC y CC):** Identificar pauta relevante (de IC o CC), generar borrador de respuesta que cumpla estrictamente `Accion`/`Como`/`Para qué`.
+    * **Guardrails y Seguridad:** Operar bajo guardrails del System Prompt (en IC), verificados por Think Tool y QA.
+    * **Interacción con `FunctionTools`:** Invocar tools (ej., `bitacora_tool`, `emotion_detection_tool`, `entidades_tool`, `save_context_info_tool`).
+    * **Think Tool Interno:** Si DT lo indica, enviar borrador a `after_model_callback` para crítica y ajuste.
+    * **Gestión de Contexto Específico:** Guardar jerga/conceptos del cliente como entidades.
+    * **Uso de Implicit Caching (IC):** Aprovechar IC para prompt fijo (personalidad, guardrails, ~70-80 pautas core).
+* **Prompt (Conceptual - Ver `prompts/zenda_system_prompt.md`):**
+    * **Parte 1:** Identidad, Principios Fundamentales (SER), Guardrails, Pautas Core (ACTUAR), Conocimiento y Adaptación.
+    * **Parte 2: Proceso Interno por Turno (El Alma de Zenda - Adaptativo):**
+        * **2.1 Recepción y Preparación del Contexto.**
+        * **2.2 Proceso Interno Principal por Modo de Asistencia (Adaptativo y Detallado):**
+            * **SI `modo_asistencia` es 'Integral':** Sintetiza las mejores perspectivas de múltiples especialidades. Desde `especialidad_principal`, busca e integra activamente aportes de `especialidades_secundarias`. Razona, pregunta y formula como el mejor profesional humano en esa disciplina, explotando `know-how` inherente (prioridad: baja latencia).
+            * **SI `modo_asistencia` es 'Rotativo':** (Proceso para UN turno del cliente dentro de un ciclo).
+                * **SI `ciclo_rotativo_actual` es 'Exploracion' (Ciclo 1):** Rotación interna secuencial por las 5 especialidades. Cada una asume rol, razona como el mejor profesional, genera preguntas/perspectivas. Finalmente, consolida TODAS las preguntas en una síntesis unificada.
+                * **SI `ciclo_rotativo_actual` es 'Integracion' (Ciclo 2):** Rotación interna secuencial con nueva info del cliente. Foco en integrar visiones de las demás especialidades para una solución consolidada.
+            * **SI `modo_asistencia` es 'Especialidad':** Enfoca en `especialidad_principal`, actuando como el mejor profesional humano de esa disciplina.
+            * **SI `modo_asistencia` es 'Urgente':** Prioriza rapidez, contención y seguridad.
+        * **2.3 Síntesis y Conciliación (SEPARADO):** Paso interno de síntesis y elaboración de borrador final.
+        * **2.4 Think Tool (SEPARADO):** Paso de validación externa y crítica del borrador (activado condicionalmente por DT).
+        * **2.5 Generación de Respuesta y Registro Final.**
+    * **Parte 3: Manejo de Fases de Sesión y Gestión de Ciclos Rotativos (Meta-Instrucciones):**
+        * **3.1 Manejo de Fases de Sesión:** Guía de comportamiento por `fase_actual` (`Inicio_Sesion`, `Desarrollo_Sesion`, `Cierre_Sesion`).
+        * **3.2 Gestión de Ciclos Rotativos:** Instrucciones sobre cómo actuar en los distintos ciclos multi-turno (`ciclo_rotativo_actual`), orquestado por ADK.
+    * **Parte 4:** Recursos y Reglas Clave (Uso de Pautas/Conocimiento de Especialidades, Estilo Consistente, Confidencialidad, Registro, Manejo de Ambigüedad, Formato de Respuesta).
+
+### 2.3. Agente QA (Post-Sesión)
+* **Rol:** Auditoría exhaustiva post-sesión de calidad y seguridad, generación de `resumen_memoria_larga`, consolidación de información (incluyendo satisfacción del cliente).
+* **Frecuencia:** Se activa al finalizar la sesión (no online).
+* **Responsabilidades Clave:**
+    * **Evaluación Holística:** Calcula `adherencia` y `efectividad` (1-10, incluyendo omisiones/comisiones y calidad de comunicación: `Score_Tono_Consistencia`, `Score_Empatia_Validacion`, `Score_Claridad_Concisión`, `Score_Proactividad_Observacion`, `Score_Extensión_Justa`).
+    * **Seguridad:** Evalúa `violaciones_guardrails` (lista), disparando alarmas.
+    * **Operacional:** Evalúa uso y resultado de `FunctionTools`.
+    * **Memoria/Oportunidades:** Evalúa fallas de memoria (`num_fallos_memoria_explicit`, `num_fallos_memoria_implicit`) y `num_oportunidades_detectadas`.
+    * **Generación/Validación de `resumen_memoria_larga`:** Invoca LLM económico para generar el resumen, y usa LLM avanzado para validar su calidad (`score_calidad_resumen`).
+    * **Satisfacción:** Integra `CSAT` y extrae `qa_labels`.
+
+### 2.4. Agente BI (Analítico)
+* **Rol:** Interfaz conversacional para que el dueño del proyecto consulte y analice datos de Zenda en lenguaje natural. Asesor de datos personal.
+* **Usuario:** El dueño/desarrollador (Dario).
+* **Capacidades:** Comprender consultas, acceder/analizar datos de Supabase (vía `FunctionTools`), generar insights, respuestas conversacionales, potencial para gráficos y FAQs predefinidas.
+* **Habilitación:** Requiere la recopilación robusta de datos que se define ahora.
+
+---
+
+## 3. Estrategia de Memoria y Contexto
+
+* **`ADK State`:** Mecanismo de ADK para memoria de trabajo de sesión. Contiene `SessionContext`.
+* **`SessionContext` (Modelo Pydantic):** Estructura que define el contenido del `ADK State` (`id_cliente`, `id_sesion`, `modo_asistencia`, `guion_dt`, `acuerdo_sesion`, `criterios`, `pautas_priorizadas`, `resumen_memoria_larga`, `interacciones_recientes`, `preferencias_usuario`, `especialidad_principal`, `especialidades_secundarias`, `fase_actual`, `ciclo_rotativo_actual`). Es la "pizarra mental" para los agentes.
+* **`resumen_memoria_larga`:** Resumen acumulativo de sesiones anteriores (memoria de largo plazo), generado por QA (LLM económico) y validado por QA (LLM avanzado). Almacenado en `sesiones.historical_summary`, cargado en `Vertex AI Context Caching` y `SessionContext`.
+* **`interacciones_recientes`:** Diálogo reciente en `SessionContext` (memoria a corto plazo).
+* **Implicit Caching (IC):** Para System Prompt (personalidad, guardrails, ~70-80 pautas core) para máxima adherencia y eficiencia de costo.
+* **`Vertex AI Context Caching` (CC):** Para pautas restantes, definiciones de especialidades (con campos enriquecidos), `resumen_memoria_larga`.
+* **Ajuste Dinámico de Memoria:** Sistema adaptativo de uso de memoria basado en desempeño (ej., fallas de memoria, consumo de tokens). Zenda puede preguntar al cliente si no recuerda.
+
+---
+
+## 4. Estructura de Datos (Modelos Pydantic y Alineación DB)
+
+* **Fuente de Verdad:** Los **modelos Pydantic (archivos `.py` en `models/`) son la fuente de verdad** del diseño de datos de Zenda (el diseño vivo y evolutivo). La base de datos (Supabase) debe ser alineada con ellos.
+* **Modelos Confirmados (MVP):**
+    * `clientes.py` (Modelo `Cliente`)
+    * `canales.py` (Modelo `Canal`)
+    * `bitacora.py` (Modelo `BitacoraEntry`)
+    * `ctacte.py` (Modelo `CtaCte`)
+    * `consumo.py` (Modelo `ConsumoSesion`)
+    * `contexto_sesion.py` (Modelo `SessionContext`)
+    * `sesion.py` (Modelo `Sesion`)
+* **Modelos Postergados (para fases futuras):** `progreso.py`, `perfil_psicografico.py`.
+* **Alineación DB:** Se generarán sentencias SQL (`ALTER TABLE`, etc.) para que las tablas de Supabase coincidan con los modelos Pydantic.
+* **`Tabla Especialidades` Mejorada:** Propuesta de enriquecerla con campos como `foco_principal_metodo`, `tecnicas_emblematicas`, `terminologia_clave`, `cuando_NO_aconseja_uso`, `rol_experto_zenda`, `ejemplo_pregunta_foco`, para potenciar la adherencia disciplinar.
+* **`Tabla Pautas`:** `peso_impacto` (1-5), `marcadores`.
+
+---
+
+## 5. Métricas de Calidad y Observabilidad
+
+* **`peso_impacto` de Pautas:** 1-5. Calidad de Implementación de Pauta: 1 (OK) / -1 (NO OK).
+* **Métricas Clave (todas 1-10, salvo conteos/listas):**
+    * `adherencia` (detección y selección de pautas, incluyendo omisiones).
+    * `efectividad` (ejecución de pautas y calidad de comunicación: `Score_Tono_Consistencia`, `Score_Empatia_Validacion`, `Score_Claridad_Concisión`, `Score_Proactividad_Observacion`, `Score_Extensión_Justa`).
+    * `latencia` (ms por turno, con `latencia_promedio_turno_ms` a nivel de sesión).
+    * `tokens_total`, `tokens_por_minuto`.
+    * `CSAT` (satisfacción del cliente).
+    * `qa_labels` (etiquetas cualitativas de feedback del cliente).
+    * `score_calidad_resumen`.
+    * `Score_Extensión_Justa` (para la regla 80/20/80 de Zenda: Escuchar 80%, Hablar 20%, de ese 20% preguntar 80%).
+* **Contadores:** `num_fallos_memoria_explicit`, `num_fallos_memoria_implicit`, `num_oportunidades_detectadas`, `violaciones_guardrails`, `activaciones_tt_totales`, `efectividad_tt_score`.
+* **Scopes (Dimensiones de Análisis):** `cliente`, `sesion`, `periodo`, `tema`, `modo_asistencia`, `especialidad`, `pauta`, `uso_tt`, `LLM_model_used`, `modo_comunicacion`, `idioma`, `tipo_herramienta`, `actor`.
+
+---
+
+## 6. Integración de Tecnología y Metodología (DevEx)
+
+* **Stack Principal:** Google Cloud Platform, Vertex AI, Supabase, ADK, FastAPI, Streamlit.
+* **Jules:** Agente de codificación para automatizar tareas (refactorización, tests), complementario a JupyterLab.
+* **Google AI Studio:** Para experimentación y refinamiento de prompts (entorno confidencial).
+* **`Vertical Slice Architecture` (VSA):** Organización del código por características/slices.
+* **`Voice Live` (Live API):** Punto a revisar en Etapa 6 (Interfaz de Usuario MVP) para posible incorporación temprana como diferencial de adopción.
+* **Región Cloud Run (CR):** Por ahora, `southamerica-east1` (debido a posible CC en SA); si no, se migra a `us-central1`. La decisión de migración se pospone hasta verificar CC en `sa-east1` o acercarse a producción.
+* **Documentación Técnica (General):** Implementación en archivos `.md` en el repositorio:
+    * `documentation/database/schema_alignment.md` (integrador de Supabase y Pydantic).
+    * `documentation/cloud_config.md` (datos de configuración de la nube para copiar/pegar).
+    * El resto de la lógica de agentes, tools y métricas se considera documentada por el código (`.py` files), sus prompts (`.md` files) y comentarios internos.
+
+---

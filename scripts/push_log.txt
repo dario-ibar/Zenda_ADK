@@ -19,3 +19,13 @@ fatal: could not read Username for 'https://github.com': No such device or addre
 [main a9ee008] Auto-commit: 2025-05-23 12:30:01
  2 files changed, 22 insertions(+)
 fatal: could not read Username for 'https://github.com': No such device or address
+[main 39ad970] Auto-commit: 2025-05-23 13:00:01
+ 9 files changed, 280 insertions(+), 26 deletions(-)
+ rewrite agents/.ipynb_checkpoints/dt_agent-checkpoint.py (73%)
+ rewrite agents/dt_agent.py (73%)
+ create mode 100644 agents/qa_agent.py
+ create mode 100644 agents/zenda_agent.py
+ create mode 100644 core/utils/prompt_utils.py
+ rename prompts/{dt_instruccion.txt => dt_system_prompt.md} (100%)
+ create mode 100644 prompts/zenda_system_prompt.md
+fatal: could not read Username for 'https://github.com': No such device or address
