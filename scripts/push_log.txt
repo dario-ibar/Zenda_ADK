@@ -83,3 +83,35 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  create mode 100644 models/.ipynb_checkpoints/client-checkpoint.py
  create mode 100644 models/client.py
 fatal: could not read Username for 'https://github.com': No such device or address
+[main 17c25d2] Auto-commit: 2025-05-27 19:00:02
+ 32 files changed, 485 insertions(+), 1 deletion(-)
+ create mode 100644 schemas/__init__.py
+ create mode 100644 schemas/__pycache__/__init__.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/bitacora.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/clientes.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/ctacte.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/entidades.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/especialidades.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/marketing.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/pautas.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/qa.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/sesiones.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/tarifas.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/tema_especialidad.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/temas.cpython-310.pyc
+ create mode 100644 schemas/__pycache__/tokens.cpython-310.pyc
+ create mode 100644 schemas/bitacora.py
+ create mode 100644 schemas/clientes.py
+ create mode 100644 schemas/ctacte.py
+ create mode 100644 schemas/entidades.py
+ create mode 100644 schemas/especialidades.py
+ create mode 100644 schemas/marketing.py
+ create mode 100644 schemas/pautas.py
+ create mode 100644 schemas/qa.py
+ create mode 100644 schemas/sesiones.py
+ create mode 100644 schemas/tarifas.py
+ create mode 100644 schemas/tema_especialidad.py
+ create mode 100644 schemas/temas.py
+ create mode 100644 schemas/tokens.py
+ create mode 100644 tokens/untitled.txt
+fatal: could not read Username for 'https://github.com': No such device or address
