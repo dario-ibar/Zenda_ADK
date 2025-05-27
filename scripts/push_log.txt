@@ -78,3 +78,8 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  rename {documentation => documentacion}/Logica e Instrucciones.txt (100%)
  create mode 100644 documentacion/Mantenimiento.txt
 fatal: could not read Username for 'https://github.com': No such device or address
+[main 035ba08] Auto-commit: 2025-05-23 19:00:01
+ 4 files changed, 85 insertions(+)
+ create mode 100644 models/.ipynb_checkpoints/client-checkpoint.py
+ create mode 100644 models/client.py
+fatal: could not read Username for 'https://github.com': No such device or address
