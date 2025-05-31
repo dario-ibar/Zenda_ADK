@@ -125,3 +125,7 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  create mode 100644 tokens/funciones.py
  delete mode 100644 tokens/untitled.txt
 fatal: could not read Username for 'https://github.com': No such device or address
+[main d206689] Auto-commit: 2025-05-31 19:00:01
+ 3 files changed, 36 insertions(+)
+ create mode 100644 documentacion/.ipynb_checkpoints/#FunctionTools-checkpoint.txt
+fatal: could not read Username for 'https://github.com': No such device or address
