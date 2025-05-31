@@ -1,0 +1,10 @@
+Listado de las funciones
+
+
+bitacora_tool: Registra eventos clave (mensajes, acciones de agentes, detección de emociones, etc.) en la bitácora de la sesión. Es para la trazabilidad y auditoría.
+emotion_detection_tool: Detecta emociones y tono del input del cliente (texto/audio). Es para que Zenda adapte su respuesta emocionalmente.
+entidades_tool: Gestiona entidades (personas, organizaciones, jerga, conceptos) en la base de datos. Es para que Zenda recuerde relaciones y contexto específico del cliente.
+save_context_info_tool: Guarda información específica o recurrente como entidades tipo "Jerga" o "Concepto". Es una forma específica de usar entidades_tool para el contexto.
+retrieve_client_data_tool: Recupera datos esenciales del cliente (preferencias, resumen_memoria_larga inicial, entidades iniciales) desde la base de datos. Es para que DT prepare el contexto inicial de la sesión.
+save_qa_report_tool: Guarda el reporte de auditoría del Agente QA en la tabla qa. Es para el registro de la calidad de la sesión.
+update_session_summary_tool: Actualiza el resumen_memoria_larga de la sesión en la base de datos. Es para la memoria a largo plazo de Zenda.

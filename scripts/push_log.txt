@@ -115,3 +115,13 @@ fatal: could not read Username for 'https://github.com': No such device or addre
  create mode 100644 schemas/tokens.py
  create mode 100644 tokens/untitled.txt
 fatal: could not read Username for 'https://github.com': No such device or address
+[main 475fed4] Auto-commit: 2025-05-27 19:30:01
+ 10 files changed, 158 insertions(+), 1 deletion(-)
+ create mode 100644 scripts/.ipynb_checkpoints/test_tokens-checkpoint.py
+ create mode 100644 scripts/__pycache__/test_tokens.cpython-310-pytest-8.3.5.pyc
+ create mode 100644 scripts/test_tokens.py
+ create mode 100644 tokens/.ipynb_checkpoints/funciones-checkpoint.py
+ create mode 100644 tokens/__pycache__/funciones.cpython-310.pyc
+ create mode 100644 tokens/funciones.py
+ delete mode 100644 tokens/untitled.txt
+fatal: could not read Username for 'https://github.com': No such device or address
