@@ -1,4 +1,4 @@
-save_qa_content = '''from google.adk.function_tool import FunctionTool
+save_qa_content = '''from google.adk.tools import FunctionTool
 from typing import Dict, Any
 from datetime import datetime
 from schemas import QaModel

@@ -1,4 +1,4 @@
-emotion_content = '''from google.adk.function_tool import FunctionTool
+from google.adk.tools import FunctionTool
 from typing import Dict, Any, Optional
 
 def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = None) -> Dict[str, Any]:
@@ -12,7 +12,7 @@ def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = N
     Returns:
         Dict[str, Any]: Diccionario con la emoción detectada y su nivel
     """
-    print(f"\\n[EMOTION_TOOL]: Analizando texto: '{input_text[:50]}...'")
+    print(f"\n[EMOTION_TOOL]: Analizando texto: '{input_text[:50]}...'")
     if audio_bytes:
         print("                 Audio también recibido (simulando análisis)")
 
@@ -48,9 +48,3 @@ def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = N
 
 # Crear FunctionTool ADK
 emotion_detection_tool = FunctionTool(emotion_detection_function)
-'''
-
-with open('/home/jupyter/Zenda_ADK/tools/emotion_detection_tool.py', 'w') as f:
-    f.write(emotion_content)
-    
-print("✅ emotion_detection_tool.py corregido!")

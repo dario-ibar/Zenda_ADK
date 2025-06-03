@@ -1,4 +1,4 @@
-retrieve_content = '''from google.adk.function_tool import FunctionTool
+retrieve_content = '''from google.adk.tools import FunctionTool
 from typing import Dict, Any
 from schemas import ClienteModel, SesionModel, EntidadModel
 import json

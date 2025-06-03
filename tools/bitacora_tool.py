@@ -1,4 +1,4 @@
-from google.adk.function_tool import FunctionTool
+from google.adk.tools import FunctionTool
 from typing import Optional, List, Literal
 from datetime import datetime
 from schemas import BitacoraModel

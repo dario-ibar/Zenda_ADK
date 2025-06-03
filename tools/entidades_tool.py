@@ -1,4 +1,4 @@
-entidades_content = '''from google.adk.function_tool import FunctionTool
+entidades_content = '''from google.adk.tools import FunctionTool
 from typing import Dict, Any, Optional
 from datetime import datetime
 from schemas import EntidadModel
