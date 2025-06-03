@@ -1,5 +1,4 @@
-# Nuevo contenido para bitacora_tool.py como FunctionTool ADK
-new_bitacora_content = '''from google.adk.function_tool import FunctionTool
+from google.adk.function_tool import FunctionTool
 from typing import Optional, List, Literal
 from datetime import datetime
 from schemas import BitacoraModel
@@ -25,7 +24,7 @@ def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, te
     Returns:
         bool: True si el registro fue exitoso
     """
-    print(f"\\n[BITACORA_TOOL]: Sesion={session_id}, Cliente={client_id}")
+    print(f"\n[BITACORA_TOOL]: Sesion={session_id}, Cliente={client_id}")
     print(f"                  Actor={actor}, Tipo={tipo}")
     print(f"                  Texto='{texto[:50]}...'")
     
@@ -56,9 +55,3 @@ def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, te
 
 # Crear FunctionTool ADK
 bitacora_tool = FunctionTool(bitacora_function)
-'''
-
-with open('/home/jupyter/Zenda_ADK/tools/bitacora_tool.py', 'w') as f:
-    f.write(new_bitacora_content)
-    
-print("✅ bitacora_tool.py convertido a FunctionTool ADK!")

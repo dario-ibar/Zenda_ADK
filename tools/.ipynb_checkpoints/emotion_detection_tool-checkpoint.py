@@ -1,5 +1,4 @@
-# Nuevo contenido para emotion_detection_tool.py como FunctionTool ADK
-new_emotion_content = '''from google.adk.function_tool import FunctionTool
+emotion_content = '''from google.adk.function_tool import FunctionTool
 from typing import Dict, Any, Optional
 
 def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = None) -> Dict[str, Any]:
@@ -12,16 +11,11 @@ def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = N
         
     Returns:
         Dict[str, Any]: Diccionario con la emoción detectada y su nivel
-                       Ej: {"emocion": "frustracion", "nivel": "alto", "tono": "pesimista"}
     """
     print(f"\\n[EMOTION_TOOL]: Analizando texto: '{input_text[:50]}...'")
     if audio_bytes:
         print("                 Audio también recibido (simulando análisis)")
 
-    # TODO: Implementar detección real con Gemini Multimodal
-    # model = GenerativeModel("gemini-1.5-pro")
-    # response = model.generate_content([input_text, audio_part])
-    
     # Simulación basada en palabras clave
     emocion = "neutral"
     nivel = "bajo"
@@ -41,16 +35,12 @@ def emotion_detection_function(input_text: str, audio_bytes: Optional[bytes] = N
         emocion = "ansiedad"
         nivel = "alto"
         tono = "nervioso"
-    elif any(word in input_lower for word in ["triste", "deprimido", "bajón"]):
-        emocion = "tristeza"
-        nivel = "medio"
-        tono = "melancólico"
 
     resultado = {
         "emocion": emocion, 
         "nivel": nivel, 
         "tono_general": tono,
-        "confianza": 0.8  # Simulación de confianza del modelo
+        "confianza": 0.8
     }
     
     print(f"       -> EMOCIÓN DETECTADA: {resultado}")
@@ -61,6 +51,6 @@ emotion_detection_tool = FunctionTool(emotion_detection_function)
 '''
 
 with open('/home/jupyter/Zenda_ADK/tools/emotion_detection_tool.py', 'w') as f:
-    f.write(new_emotion_content)
+    f.write(emotion_content)
     
-print("✅ emotion_detection_tool.py convertido a FunctionTool ADK!")
+print("✅ emotion_detection_tool.py corregido!")
