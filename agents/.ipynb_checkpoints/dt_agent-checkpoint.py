@@ -1,35 +1,11 @@
-from google.adk.agents.llm_agent import LlmAgent
+# Contenido actualizado del dt_agent.py
+new_dt_content = '''from google.adk.agents.llm_agent import LlmAgent
 from google.adk.agents.agent import AgentResult # Para AgentResult
 from google.adk.agent_builder import AgentBuilder
 from google.adk.function_tool import FunctionTool
 from core.utils.prompt_utils import read_prompt_file
+from schemas import SessionContext  # Importar SessionContext real
 import json # Necesario para manejar JSON en el SessionContext
-
-# --- Importar modelos Pydantic (AÚN NO CREADOS, SE HARÁ EN PASOS POSTERIORES) ---
-# En la fase de volcado de modelos Pydantic, crearemos models/session_context.py
-# Por ahora, para que el código compile y sea usable, definimos una clase placeholder.
-class SessionContext:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def to_dict(self):
-        # Asegurarse de que sub-diccionarios/objetos también se conviertan si SessionContext es complejo
-        data = {}
-        for k, v in self.__dict__.items():
-            if isinstance(v, SessionContext): # Ejemplo para sub-contextos
-                data[k] = v.to_dict()
-            elif isinstance(v, dict): # Para diccionarios genéricos como 'criterios'
-                data[k] = v
-            elif hasattr(v, 'isoformat'): # Para objetos datetime.date, datetime.datetime
-                data[k] = v.isoformat()
-            else:
-                data[k] = v
-        return data
-
-    @staticmethod
-    def from_dict(data):
-        # Lógica para reconstruir el objeto desde un diccionario, manejando sub-objetos si aplica.
-        # Para el placeholder, una creación directa es suficiente.
-        return SessionContext(**data)
 
 # --- DEFINICIÓN DE FUNCTIONTOOLS (PLACEHOLDERS, SE IMPLEMENTARÁN EN PASOS POSTERIORES) ---
 # Estas son las herramientas que el Agente DT usará.
@@ -63,7 +39,7 @@ def update_session_context_tool(session_id: str, client_id: str, context_data: d
     Returns:
         True si la actualización fue exitosa.
     """
-    print(f"DEBUG: Llamada a update_session_context_tool para sesión {session_id}, cliente {client_id} con datos: {json.dumps(context_data)}")
+    print(f"DEBUG: Llamada a update_session_context_tool para sesión {session_id}, cliente {client_id} con datos: {json.dumps(context_data, default=str)}")
     # TODO: Implementar la lógica real para actualizar el ADK State (Paso 4/5)
     # Aquí solo simulamos la acción.
     return True
@@ -107,7 +83,7 @@ class DtAgent(LlmAgent):
         """
         Lógica del DT para inicializar el SessionContext al inicio de una nueva sesión.
         """
-        print(f"\n[DT_AGENT]: Iniciando contexto para cliente {client_id}, sesión {session_id}...")
+        print(f"\\n[DT_AGENT]: Iniciando contexto para cliente {client_id}, sesión {session_id}...")
         
         # 1. Recuperar datos del cliente (simulando tool call)
         client_data = retrieve_client_data_tool(client_id)
@@ -116,28 +92,27 @@ class DtAgent(LlmAgent):
         print("[DT_AGENT]: Asegurando que Context Caching esté poblado (lógica placeholder)...")
         # TODO: Implementar lógica de CC aquí (Paso 5)
         
-        # 3. Preparar SessionContext inicial
-        initial_context_data = {
-            "id_cliente": client_id,
-            "id_sesion": session_id,
-            "fase_actual": "Inicio_Sesion", # Siempre empieza en inicio
-            "modo_asistencia": "Integral", # Valor por defecto para inicio de sesión
-            "guion_dt": "Exploración inicial del problema del cliente para establecer el acuerdo de sesión.",
-            "acuerdo_sesion": None, # Se definirá con el cliente
-            "criterios": {"foco": "rapport", "objetivo_inicial": "identificar_tema_principal"},
-            "pautas_priorizadas": ["ICF-1.1_escucha_activa", "ICF-2.0_preg_abiertas"], # Pautas iniciales
-            "resumen_memoria_larga": client_data.get("resumen_memoria_larga"),
-            "interacciones_recientes": [{"actor": "cliente", "text": initial_input}], # Primera interacción
-            "preferencias_usuario": client_data.get("preferencias", {}),
-            "especialidad_principal": "ICF", # Placeholder, DT podría decidir
-            "especialidades_secundarias": ["Ontología", "Gestalt"], # Placeholder
-            "ciclo_rotativo_actual": None, # Solo si es modo rotativo
-            "think_tool_activado": False, # DT decide esto en cada turno
-            "motivo_tt": None # Motivo si TT activado
-        }
+        # 3. Preparar SessionContext inicial usando Pydantic
+        session_context = SessionContext(
+            id_cliente=client_id,
+            id_sesion=session_id,
+            fase_actual="Inicio_Sesion",
+            modo_asistencia="Integral",
+            guion_dt="Exploración inicial del problema del cliente para establecer el acuerdo de sesión.",
+            acuerdo_sesion=None,
+            criterios={"foco": "rapport", "objetivo_inicial": "identificar_tema_principal"},
+            pautas_priorizadas=["ICF-1.1_escucha_activa", "ICF-2.0_preg_abiertas"],
+            resumen_memoria_larga=client_data.get("resumen_memoria_larga"),
+            interacciones_recientes=[{"actor": "cliente", "text": initial_input}],
+            preferencias_usuario=client_data.get("preferencias", {}),
+            especialidad_principal="ICF",
+            especialidades_secundarias=["Ontología", "Gestalt"],
+            ciclo_rotativo_actual=None,
+            think_tool_activado=False,
+            motivo_tt=None
+        )
         
-        session_context = SessionContext.from_dict(initial_context_data)
-        update_session_context_tool(session_context.id_sesion, session_context.id_cliente, session_context.to_dict()) # Simula actualización
+        update_session_context_tool(str(session_context.id_sesion), str(session_context.id_cliente), session_context.model_dump()) 
         print("[DT_AGENT]: Contexto de sesión inicial preparado y actualizado.")
         
         return session_context
@@ -147,90 +122,84 @@ class DtAgent(LlmAgent):
         """
         Lógica del DT para decidir la estrategia turno a turno.
         """
-        print(f"\n[DT_AGENT]: Decidiendo estrategia para el turno. Fase actual: {current_session_context.fase_actual}")
+        print(f"\\n[DT_AGENT]: Decidiendo estrategia para el turno. Fase actual: {current_session_context.fase_actual}")
         
-        # Aquí iría el razonamiento del LLM del DT (con dt_prompt_content como instrucción)
-        # para analizar el user_input, recent_events y current_session_context.
-        # Por simplicidad, se muestra lógica directa aquí, no la llamada al LLM.
-
-        # Actualizar SessionContext para el turno
-        new_session_context_data = current_session_context.to_dict() # Convertir a dict para modificar
-        new_session_context = SessionContext.from_dict(new_session_context_data) # Crear nuevo objeto a partir de dict para trabajar
+        # Crear nuevo SessionContext modificado usando Pydantic
+        new_session_context = current_session_context.model_copy(deep=True)
         
         # --- Lógica de ejemplo de decisión del DT (simulando razonamiento LLM) ---
         # 1. Detección de tema sensible o falla de memoria para activar Think Tool
-        think_tool_activated_in_turn = False
-        motivo_tt_in_turn = None
-
         if "ansiedad" in user_input.lower() or "estrés" in user_input.lower() or \
-           "miedo" in user_input.lower() or "depresion" in user_input.lower(): # Simplificación de detección de tema sensible
+           "miedo" in user_input.lower() or "depresion" in user_input.lower():
             new_session_context.think_tool_activado = True
-            new_session_context.motivo_tt = "S" # Sensible
-            think_tool_activated_in_turn = True
-            motivo_tt_in_turn = "S"
+            new_session_context.motivo_tt = "S"
             if "foco" not in new_session_context.criterios or new_session_context.criterios.get("foco") != "manejo_emocional":
                 new_session_context.criterios["foco"] = "manejo_emocional"
                 new_session_context.guion_dt = "Explorar y validar emociones, buscando estrategias de manejo."
                 log_dt_finding_tool(
-                    session_id=new_session_context.id_sesion,
-                    client_id=new_session_context.id_cliente,
+                    session_id=str(new_session_context.id_sesion),
+                    client_id=str(new_session_context.id_cliente),
                     finding_type="ajuste_estrategia_tema_sensible",
                     description=f"Tema sensible detectado ('{user_input}'). DT ajusta foco y activa TT.",
                     tags=["tema_sensible", "estrat_dt", "tt_activado"]
                 )
-        elif "olvidaste" in user_input.lower() or "no recuerdas" in user_input.lower(): # Detección de falla de memoria
+        elif "olvidaste" in user_input.lower() or "no recuerdas" in user_input.lower():
             new_session_context.think_tool_activado = True
-            new_session_context.motivo_tt = "F" # Falla
-            think_tool_activated_in_turn = True
-            motivo_tt_in_turn = "F"
+            new_session_context.motivo_tt = "F"
             log_dt_finding_tool(
-                session_id=new_session_context.id_sesion,
-                client_id=new_session_context.id_cliente,
+                session_id=str(new_session_context.id_sesion),
+                client_id=str(new_session_context.id_cliente),
                 finding_type="falla_memoria_detectada",
                 description="Cliente indica falla de memoria. DT activa TT.",
                 tags=["falla_memoria", "estrat_dt", "tt_activado"]
             )
         else:
-            new_session_context.think_tool_activado = False # Si no hay razón, se desactiva por defecto
+            new_session_context.think_tool_activado = False
             new_session_context.motivo_tt = None
 
-        # 2. Avance de fase (ej., si se cumplió el objetivo inicial)
-        if new_session_context.fase_actual == "Inicio_Sesion" and "identificar_tema_principal" in new_session_context.criterios.get("objetivo_inicial", "") and len(new_session_context.interacciones_recientes) > 2:
-            # Aquí el DT podría decidir basado en el input si el tema principal ya está claro
-            # Simulamos que sí después de unas interacciones
-            new_session_context.criterios["objetivo_inicial"] = "tema_identificado" # Marca como hecho
+        # 2. Avance de fase
+        if (new_session_context.fase_actual == "Inicio_Sesion" and 
+            "identificar_tema_principal" in new_session_context.criterios.get("objetivo_inicial", "") and 
+            len(new_session_context.interacciones_recientes) > 2):
+            
+            new_session_context.criterios["objetivo_inicial"] = "tema_identificado"
             new_session_context.fase_actual = "Desarrollo_Sesion"
             log_dt_finding_tool(
-                session_id=new_session_context.id_sesion,
-                client_id=new_session_context.id_cliente,
+                session_id=str(new_session_context.id_sesion),
+                client_id=str(new_session_context.id_cliente),
                 finding_type="avance_fase",
                 description="Fase cambiada a Desarrollo_Sesion. Tema principal identificado.",
                 tags=["fase_sesion", "estrat_dt"]
             )
 
-        # 3. Actualizar pautas priorizadas (ejemplo simple según fase o foco)
+        # 3. Actualizar pautas priorizadas
         if new_session_context.fase_actual == "Desarrollo_Sesion" and new_session_context.criterios.get("foco") == "manejo_emocional":
             new_session_context.pautas_priorizadas = ["ICF-3.1_manejo_emocional", "ICF-4.2_resp_profunda", "Gestalt-1.0_conciencia_corporal"]
         elif new_session_context.fase_actual == "Desarrollo_Sesion":
             new_session_context.pautas_priorizadas = ["ICF-1.1_escucha_activa", "ICF-2.0_preg_abiertas", "ICF-5.0_desafiar_creencias"]
-        else: # Fase de inicio o cierre
-            new_session_context.pautas_priorizadas = [] # Las pautas específicas de fase se manejarán en esa sección
+        else:
+            new_session_context.pautas_priorizadas = []
 
-        # 4. Ajustar modo de asistencia (ejemplo: si DT detecta necesidad de rotación, cambiaría el modo)
-        # Esta lógica sería más compleja e involucraría más razonamiento del DT.
-        # Por ejemplo, si el cliente muestra alta resistencia y un tema complejo, DT podría sugerir "Rotativo"
-
-        update_session_context_tool(new_session_context.id_sesion, new_session_context.id_cliente, new_session_context.to_dict()) # Simula actualización
+        update_session_context_tool(str(new_session_context.id_sesion), str(new_session_context.id_cliente), new_session_context.model_dump())
         print(f"[DT_AGENT]: Estrategia del turno decidida. TT activado: {new_session_context.think_tool_activado} (Motivo: {new_session_context.motivo_tt})")
         
-        # En un sistema ADK real, el DT devolvería el contexto modificado.
         return new_session_context
 
 # Instanciar el agente DT con su prompt
 dt_agent_instance = DtAgent(
     name="dt_master",
     instruction=dt_prompt_content,
-    model="gemini-1.5-pro" # O el modelo específico para DT
+    model="gemini-1.5-pro"
 )
 
-print("\nAgente DT (DtAgent) definido y configurado exitosamente con lógica completa.")
+print("\\nAgente DT (DtAgent) definido y configurado exitosamente con SessionContext Pydantic real.")
+'''
+
+# Escribir el archivo actualizado
+with open('/home/jupyter/Zenda_ADK/agents/dt_agent.py', 'w') as f:
+    f.write(new_dt_content)
+    
+print("✅ dt_agent.py actualizado con SessionContext Pydantic real!")
+print("✅ Eliminado placeholder SessionContext")
+print("✅ Agregado import desde schemas")
+print("✅ Actualizado para usar .model_dump() y .model_copy()")

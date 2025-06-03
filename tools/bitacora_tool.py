@@ -1,45 +1,64 @@
-# tools/bitacora_tool.py
-from typing import List, Optional, Literal
+# Nuevo contenido para bitacora_tool.py como FunctionTool ADK
+new_bitacora_content = '''from google.adk.function_tool import FunctionTool
+from typing import Optional, List, Literal
 from datetime import datetime
+from schemas import BitacoraModel
 import json
 
-# --- Placeholder para el modelo Pydantic BitacoraEntry (se reemplazará por el real) ---
-# Asumimos que BitacoraEntry será una clase que podemos convertir a dict
-class BitacoraEntry:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def to_dict(self):
-        # Asegurar conversión de tipos para el log (ej. datetime a str)
-        data = {}
-        for k,v in self.__dict__.items():
-            if isinstance(v, datetime):
-                data[k] = v.isoformat()
-            else:
-                data[k] = v
-        return data
-
-def bitacora_tool(session_id: str, client_id: str, actor: str, tipo: str, texto: str,
-                  guia: Optional[List[str]] = None, tt: Optional[Literal["S", "F"]] = None,
-                  canal: Optional[Literal["T", "S"]] = None) -> bool:
+def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, texto: str,
+                     guia: Optional[List[str]] = None, tt: Optional[Literal["S", "F"]] = None,
+                     canal: Optional[Literal["T", "S"]] = None) -> bool:
     """
     Registra un evento en la bitácora de la sesión.
     Esta es una FunctionTool que los agentes usarán para loguear.
+    
+    Args:
+        session_id: ID de la sesión
+        client_id: ID del cliente 
+        actor: Quién generó el evento (cliente, zenda, dt, qa, sistema)
+        tipo: Tipo de entrada (msg, resumen, op, ent, emo, tec, fmem)
+        texto: Contenido principal
+        guia: Códigos de guía aplicados (opcional)
+        tt: Si se usó Think Tool - S/F (opcional)
+        canal: Canal de comunicación - T/S (opcional)
+        
+    Returns:
+        bool: True si el registro fue exitoso
     """
-    print(f"\n[TOOL]: bitacora_tool invocada - Sesion: {session_id}, Cliente: {client_id}")
+    print(f"\\n[BITACORA_TOOL]: Sesion={session_id}, Cliente={client_id}")
+    print(f"                  Actor={actor}, Tipo={tipo}")
+    print(f"                  Texto='{texto[:50]}...'")
+    
+    # Preparar datos para BitacoraModel
     entry_data = {
-        "id_cliente": client_id,
-        "id_sesion": session_id,
-        "timestamp": datetime.now(),
+        "session_id": session_id,
+        "user_id": client_id,
+        "created_at": datetime.now(),
         "actor": actor,
-        "tipo": tipo,
-        "texto": texto,
-        "guia": guia,
-        "tt": tt,
-        "canal": canal
+        "event_type": tipo,
+        "content_text": texto,
+        "pautas_codigos": ",".join(guia) if guia else None,
+        "status": "ok",
+        "tags": ",".join([tt] if tt else []),
+        "metadata": {
+            "canal": canal,
+            "tt": tt,
+            "guia": guia
+        }
     }
-    # Validar con Pydantic si el modelo BitacoraEntry real estuviera aquí
-    # entry = BitacoraEntry(**entry_data) 
-
-    print(f"       -> BITACORA REGISTRO: {json.dumps(entry_data, indent=2)}")
-    # TODO: Implementar la lógica REAL de persistencia a Supabase (Paso 7)
+    
+    # TODO: Implementar persistencia real a Supabase
+    # bitacora_entry = BitacoraModel(**entry_data)
+    # supabase.table('bitacora').insert(bitacora_entry.model_dump()).execute()
+    
+    print(f"       -> BITACORA REGISTRADO: {json.dumps(entry_data, default=str, indent=2)}")
     return True
+
+# Crear FunctionTool ADK
+bitacora_tool = FunctionTool(bitacora_function)
+'''
+
+with open('/home/jupyter/Zenda_ADK/tools/bitacora_tool.py', 'w') as f:
+    f.write(new_bitacora_content)
+    
+print("✅ bitacora_tool.py convertido a FunctionTool ADK!")

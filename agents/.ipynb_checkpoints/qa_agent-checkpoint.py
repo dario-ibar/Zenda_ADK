@@ -1,40 +1,12 @@
-from google.adk.agents.llm_agent import LlmAgent
+# Contenido actualizado del qa_agent.py
+new_qa_content = '''from google.adk.agents.llm_agent import LlmAgent
 from google.adk.agents.agent import AgentResult, GenerationResult
 from google.adk.function_tool import FunctionTool
 from core.utils.prompt_utils import read_prompt_file
+from schemas import SessionContext, BitacoraModel, SesionModel  # Importar modelos reales
 import json
 import uuid
 from typing import Optional, List, Dict, Any
-
-# --- Importar modelos Pydantic (PLACEHOLDERS, SE HARÁ EN PASOS POSTERIORES) ---
-# Cuando los modelos Pydantic reales estén creados en models/, se reemplazarán estas clases placeholder.
-
-class SessionContext: # Placeholder para el modelo ContextoSesion
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def to_dict(self):
-        return self.__dict__
-    @staticmethod
-    def from_dict(data):
-        return SessionContext(**data)
-
-class BitacoraEntry: # Placeholder para el modelo BitacoraEntry
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def to_dict(self):
-        return self.__dict__
-    @staticmethod
-    def from_dict(data):
-        return BitacoraEntry(**data)
-
-class Sesion: # Placeholder para el modelo Sesion
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-    def to_dict(self):
-        return self.__dict__
-    @staticmethod
-    def from_dict(data):
-        return Sesion(**data)
 
 # --- DEFINICIÓN DE FUNCTIONTOOLS (PLACEHOLDERS, SE IMPLEMENTARÁN EN PASOS POSTERIORES) ---
 # Estas son las herramientas que el Agente QA usará.
@@ -70,7 +42,7 @@ def save_qa_report_tool(qa_report_data: dict) -> bool:
     Returns:
         True si el registro fue exitoso.
     """
-    print(f"DEBUG: Llamada a save_qa_report_tool con reporte QA: {json.dumps(qa_report_data, indent=2)}")
+    print(f"DEBUG: Llamada a save_qa_report_tool con reporte QA: {json.dumps(qa_report_data, indent=2, default=str)}")
     # TODO: Implementar la lógica real para guardar en la tabla qa (Paso 7)
     return True
 
@@ -108,27 +80,25 @@ class QaAgent(LlmAgent):
         self.summary_gen_model = summary_gen_model
         self.summary_eval_model = summary_eval_model
 
-    def perform_audit(self, session_data: Sesion) -> dict: # Recibe el objeto Sesion completo
+    def perform_audit(self, session_data: SesionModel) -> dict: # Recibe el objeto SesionModel completo
         """
         Método principal para que el Agente QA realice una auditoría post-sesión.
         """
-        print(f"\n[QA_AGENT]: Iniciando auditoría para sesión {session_data.id_sesion}, cliente {session_data.id_cliente}...")
+        print(f"\\n[QA_AGENT]: Iniciando auditoría para sesión {session_data.id_sesion}, cliente {session_data.id_cliente}...")
         
         # 1. Recuperar Bitácora Completa
-        bitacora_completa = retrieve_bitacora_tool(session_data.id_sesion)
+        bitacora_completa = retrieve_bitacora_tool(str(session_data.id_sesion))
         if not bitacora_completa:
             print("[QA_AGENT]: No se encontró bitácora para auditar. Saliendo.")
             return {"status": "no_bitacora"}
 
-        # 2. Pre-cálculos para la auditoría (Ej: duración, tokens, etc., que ya están en session_data)
-        session_duration_sec = session_data.duracion_segundos
-        session_total_tokens = session_data.tokens_total
+        # 2. Pre-cálculos para la auditoría
+        session_duration_min = session_data.duracion_minutos or 0
+        session_total_tokens = session_data.tokens_total or 0
         client_comment = session_data.comentario_usuario
-        client_satisfaction = session_data.satisfaccion
+        client_satisfaction = session_data.csat
 
         # --- 3. Lógica del LLM de QA para la Auditoría Holística de Calidad ---
-        # Este es el corazón de la evaluación. Se pasaría el prompt de QA (self.instruction)
-        # y la bitácora completa al LLM avanzado (self.model).
         
         audit_prompt = f"""
         # INSTRUCCIONES: Eres el Agente QA de Zenda. Realiza una auditoría exhaustiva de la siguiente sesión.
@@ -191,7 +161,7 @@ class QaAgent(LlmAgent):
         qa_raw_output["score_calidad_resumen"] = 9 # Actualizamos el score en el reporte
 
         # 4.3. Actualizar resumen en la DB
-        update_session_summary_tool(session_data.id_sesion, raw_summary_text)
+        update_session_summary_tool(str(session_data.id_sesion), raw_summary_text)
 
         # --- 5. Consolidación y Registro ---
         qa_report = {
@@ -208,7 +178,7 @@ class QaAgent(LlmAgent):
             "num_fallos_memoria_explicit": qa_raw_output["num_fallos_memoria_explicit"],
             "num_fallos_memoria_implicit": qa_raw_output["num_fallos_memoria_implicit"],
             "num_oportunidades_detectadas": qa_raw_output["num_oportunidades_detectadas"],
-            "CSAT": client_satisfaction, # Viene directo del Sesion
+            "CSAT": client_satisfaction, # Viene directo del SesionModel
             "qa_labels": qa_raw_output["qa_labels"],
             "score_calidad_resumen": qa_raw_output["score_calidad_resumen"],
             "alarma_seguridad": qa_raw_output["alarma_seguridad"] # Para disparar alerta
@@ -216,7 +186,7 @@ class QaAgent(LlmAgent):
         
         save_qa_report_tool(qa_report) # Guarda el reporte en la tabla 'qa'
 
-        print(f"\n[QA_AGENT]: Auditoría de sesión {session_data.id_sesion} completada y registrada.")
+        print(f"\\n[QA_AGENT]: Auditoría de sesión {session_data.id_sesion} completada y registrada.")
         return qa_report
 
 # Instanciar el agente QA con sus prompts y modelos
@@ -228,4 +198,13 @@ qa_agent_instance = QaAgent(
     summary_eval_model="gemini-1.5-pro" # Modelo para evaluar el resumen
 )
 
-print("\nAgente QA (QaAgent) definido y configurado exitosamente con lógica completa.")
+print("\\nAgente QA (QaAgent) definido y configurado exitosamente con modelos Pydantic reales.")
+'''
+
+# Escribir el archivo actualizado
+with open('/home/jupyter/Zenda_ADK/agents/qa_agent.py', 'w') as f:
+    f.write(new_qa_content)
+    
+print("✅ qa_agent.py actualizado con modelos Pydantic reales!")
+print("✅ SessionContext, BitacoraModel, SesionModel importados")
+print("✅ Placeholders eliminados")
