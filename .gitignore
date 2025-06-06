@@ -1,3 +1,18 @@
 # Archivos de log
 *.log
 *.txt
+
+# Credenciales y secretos
+.env
+*.env
+.env.*
+
+# Archivos de configuración sensibles
+config.json
+secrets.json
+credentials.json
+
+# Logs y temporales
+*.log
+__pycache__/
+.pytest_cache/
