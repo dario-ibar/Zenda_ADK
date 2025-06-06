@@ -4,6 +4,11 @@
 
 echo "--- Ejecutando script de actualización de GitHub ---"
 
+# Navegar a la carpeta del proyecto.
+# Asume que este script se ejecuta desde el directorio HOME del usuario jupyter (~)
+# Si tu carpeta Zenda_ADK está en otro lugar, ajusta esta ruta.
+cd ~/Zenda_ADK
+
 # Verificar que estamos en la rama main
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 if [ "$current_branch" != "main" ]; then
