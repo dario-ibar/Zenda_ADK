@@ -2,14 +2,27 @@
 """
 xDiagnostico.py
 Script de diagnóstico completo para el sistema Zenda.
-Verifica schemas, conexiones, estructura DB y configuraciones.
+
+USO:
+
+- TERMINAL: python xDiagnostico.py [env|creds|db|schemas|dump|tools]
+
+- JUPYTERLAB: 
+import sys
+sys.argv = ['xDiagnostico.py']  # Para reporte completo
+exec(open('/home/jupyter/Zenda_ADK/xDiagnostico.py').read())
+
+- JUPYTERLAB SECCIÓN ESPECÍFICA:
+import sys
+sys.argv = ['xDiagnostico.py', 'schemas']  # o env, creds, db, dump, tools
+exec(open('/home/jupyter/Zenda_ADK/xDiagnostico.py').read())
+
 """
 
 import os
 import sys
 import glob
 import json
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
@@ -33,13 +46,13 @@ def check_environment():
     """Verifica el entorno y dependencias"""
     print_header("DIAGNÓSTICO DE ENTORNO")
     
-    # Verificar Python y librerías
     print(f"Python: {sys.version}")
     print(f"Directorio actual: {os.getcwd()}")
     print(f"Proyecto Zenda: {PROJECT_ROOT}")
     
     # Verificar librerías críticas
-    required_libs = ['supabase', 'dotenv', 'pandas', 'uuid']
+    required_libs = ['supabase', 'dotenv', 'uuid']
+    optional_libs = ['pandas']
     missing_libs = []
     
     for lib in required_libs:
@@ -49,6 +62,13 @@ def check_environment():
         except ImportError:
             print(f"❌ {lib}: NO INSTALADA")
             missing_libs.append(lib)
+    
+    for lib in optional_libs:
+        try:
+            __import__(lib)
+            print(f"✅ {lib}: Instalada")
+        except ImportError:
+            print(f"⚠️  {lib}: NO INSTALADA (opcional)")
     
     if missing_libs:
         print(f"\n⚠️  Instalar: pip install {' '.join(missing_libs)}")
@@ -66,7 +86,6 @@ def check_credentials():
     
     print(f"✅ Archivo .env encontrado: {env_path}")
     
-    # Cargar variables
     try:
         from dotenv import load_dotenv
         load_dotenv(env_path)
@@ -134,7 +153,6 @@ def analyze_schemas():
             with open(schema_file, 'r') as f:
                 content = f.read()
                 
-            # Buscar definiciones importantes
             lines = content.split('\n')
             enums_found = []
             models_found = []
@@ -150,7 +168,7 @@ def analyze_schemas():
                 if line_clean.startswith('class ') and 'BaseModel' in line_clean:
                     models_found.append(f"Línea {i+1}: {line_clean}")
                 
-                # Buscar campos específicos problemáticos
+                # Buscar campos específicos
                 if any(field in line_clean.lower() for field in ['event_type', 'actor', 'client_id', 'user_id']):
                     print(f"  🔍 Línea {i+1}: {line_clean}")
             
@@ -179,46 +197,71 @@ def analyze_db_dump():
     """Analiza el dump CSV de la estructura DB"""
     print_header("ANÁLISIS DEL DUMP CSV")
     
-    if not os.path.exists(CSV_DUMP_PATH):
-        print(f"❌ CSV dump no encontrado: {CSV_DUMP_PATH}")
+    # Buscar CSV en múltiples ubicaciones
+    possible_paths = [
+        CSV_DUMP_PATH,
+        f'{PROJECT_ROOT}/Supabase Snippet Tablas Campos Pydantic 1.csv',
+        f'{PROJECT_ROOT}/Supabase*.csv'
+    ]
+    
+    csv_found = None
+    for path in possible_paths:
+        if '*' in path:
+            matches = glob.glob(path)
+            if matches:
+                csv_found = matches[0]
+                break
+        elif os.path.exists(path):
+            csv_found = path
+            break
+    
+    if not csv_found:
+        print(f"❌ CSV dump no encontrado en ubicaciones:")
+        for path in possible_paths:
+            print(f"  - {path}")
         return {}
     
     try:
-        df = pd.read_csv(CSV_DUMP_PATH)
-        print(f"✅ CSV cargado: {len(df)} filas")
-        
-        # Analizar tabla bitacora específicamente
-        print_section("Tabla BITACORA")
-        bitacora_fields = df[df['tabla'] == 'bitacora']
-        
-        if len(bitacora_fields) > 0:
-            print("📋 Campos de bitacora:")
-            for _, row in bitacora_fields.iterrows():
-                print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
+        # Intentar con pandas primero, si no está usar csv
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_found)
+            print(f"✅ CSV cargado: {len(df)} filas (usando pandas)")
             
-            # ENUMs específicos
-            enum_fields = bitacora_fields[bitacora_fields['formato_sql'].str.contains('USER-DEFINED|enum', na=False)]
-            if len(enum_fields) > 0:
-                print("\n🔍 Campos ENUM en bitacora:")
-                for _, row in enum_fields.iterrows():
-                    print(f"  - {row['campo']}:")
-                    print(f"    SQL: {row['formato_sql']}")
-                    print(f"    Pydantic: {row['tipo_pydantic']}")
-                    print(f"    Restricciones: {row['restricciones']}")
+            # Analizar tabla bitacora específicamente
+            print_section("Tabla BITACORA")
+            bitacora_fields = df[df['tabla'] == 'bitacora']
+            
+            if len(bitacora_fields) > 0:
+                print("📋 Campos de bitacora:")
+                for _, row in bitacora_fields.iterrows():
+                    print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
+            else:
+                print("❌ No se encontraron campos para tabla 'bitacora'")
+            
+            # Todas las tablas disponibles
+            print_section("Tablas Disponibles")
+            tablas = df['tabla'].unique()
+            print(f"Total tablas: {len(tablas)}")
+            for tabla in sorted(tablas):
+                count = len(df[df['tabla'] == tabla])
+                print(f"  - {tabla}: {count} campos")
+                
+        except ImportError:
+            # Fallback sin pandas
+            import csv
+            with open(csv_found, 'r') as f:
+                reader = csv.DictReader(f)
+                data = list(reader)
+            print(f"✅ CSV cargado: {len(data)} filas (usando csv)")
+            
+            bitacora_fields = [row for row in data if row['tabla'] == 'bitacora']
+            if bitacora_fields:
+                print_section("Tabla BITACORA")
+                for row in bitacora_fields:
+                    print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
         
-        # Todas las tablas disponibles
-        print_section("Tablas Disponibles")
-        tablas = df['tabla'].unique()
-        print(f"Total tablas: {len(tablas)}")
-        for tabla in sorted(tablas):
-            count = len(df[df['tabla'] == tabla])
-            print(f"  - {tabla}: {count} campos")
-        
-        return {
-            'total_filas': len(df),
-            'tablas': list(tablas),
-            'bitacora_fields': bitacora_fields.to_dict('records') if len(bitacora_fields) > 0 else []
-        }
+        return {'csv_path': csv_found, 'total_filas': len(data) if 'data' in locals() else len(df)}
         
     except Exception as e:
         print(f"❌ Error analizando CSV: {e}")
@@ -233,7 +276,6 @@ def test_table_access(client, table_name='bitacora'):
         return False
     
     try:
-        # Test SELECT básico
         response = client.table(table_name).select('*').limit(1).execute()
         print(f"✅ SELECT en {table_name}: OK")
         
@@ -274,22 +316,15 @@ def check_function_tools():
             with open(tool_file, 'r') as f:
                 content = f.read()
             
-            # Buscar definiciones de funciones
             lines = content.split('\n')
             functions = []
-            imports = []
             
             for line in lines:
                 line_clean = line.strip()
                 if line_clean.startswith('def ') and not line_clean.startswith('def __'):
                     functions.append(line_clean)
-                elif line_clean.startswith('from ') or line_clean.startswith('import '):
-                    imports.append(line_clean)
             
-            tools_info[filename] = {
-                'functions': functions,
-                'imports': imports[:5]  # Solo primeros 5 imports
-            }
+            tools_info[filename] = {'functions': functions}
             
             print(f"  ✅ Funciones encontradas: {len(functions)}")
             for func in functions:
@@ -334,22 +369,10 @@ def generate_report():
     for item, status in status_items:
         print(f"{status} {item}")
     
-    # Estado general
     all_critical_ok = env_ok and creds_ok and client and table_ok
     print(f"\n🎯 ESTADO GENERAL: {'✅ LISTO PARA DESARROLLO' if all_critical_ok else '⚠️ REQUIERE ATENCIÓN'}")
-    
-    return {
-        'timestamp': datetime.now().isoformat(),
-        'environment': env_ok,
-        'credentials': creds_ok,
-        'database': client is not None,
-        'schemas': schemas_info,
-        'db_structure': db_info,
-        'tools': tools_info
-    }
 
 if __name__ == "__main__":
-    # Permitir ejecución con argumentos
     if len(sys.argv) > 1:
         command = sys.argv[1].lower()
         
@@ -368,7 +391,6 @@ if __name__ == "__main__":
         elif command == 'tools':
             check_function_tools()
         else:
-            print("Uso: python xDiagnostico.py [env|creds|db|schemas|dump|tools]")
+            print(__doc__)
     else:
-        # Reporte completo
         generate_report()
