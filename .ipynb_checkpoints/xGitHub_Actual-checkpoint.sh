@@ -1,4 +1,4 @@
-# RECUERDA: Para ejecutar este script, usa: ./GitHub_Actual.sh
+# RECUERDA: Para ejecutar este script EN LA TERMINAL, usa: ./xGitHub_Actual.sh
 
 #!/bin/bash
 
