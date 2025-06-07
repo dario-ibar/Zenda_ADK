@@ -16,7 +16,7 @@ class ClienteModel(BaseModel):
     canal_info: Optional[str]
     cod_mktg: Optional[str]
     fecha_alta: datetime
-    estado: Optional[str]
+    estado: str = "activo"
     preferencias: Optional[dict]
     codigo_personal: Optional[str]
     ash: UUID

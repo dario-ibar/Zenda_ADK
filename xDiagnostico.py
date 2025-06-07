@@ -4,12 +4,12 @@ xDiagnostico.py
 Script de diagnóstico completo para el sistema Zenda.
 
 USO:
-- TERMINAL: 
-python xDiagnostico.py [env|creds|db|schemas|dump|tools]
+- TERMINAL:
+python xDiagnostico.py [env|creds|db|schemas|dump|tools|all]
 
-- JUPYTERLAB: 
+- JUPYTERLAB:
 import sys
-sys.argv = ['xDiagnostico.py']
+sys.argv = ['xDiagnostico.py', 'all'] # o el comando específico
 exec(open('/home/jupyter/Zenda_ADK/xDiagnostico.py').read())
 
 - JUPYTERLAB SECCIÓN ESPECÍFICA:
@@ -51,7 +51,7 @@ def check_environment():
     
     # Verificar librerías críticas
     required_libs = ['supabase', 'dotenv', 'uuid']
-    optional_libs = ['pandas']
+    optional_libs = ['pandas', 'pydantic'] # Agregado pydantic para validación de schemas
     missing_libs = []
     
     for lib in required_libs:
@@ -67,7 +67,7 @@ def check_environment():
             __import__(lib)
             print(f"✅ {lib}: Instalada")
         except ImportError:
-            print(f"⚠️  {lib}: NO INSTALADA (opcional)")
+            print(f"⚠️  {lib}: NO INSTALADA (opcional o para funcionalidades avanzadas)")
     
     if missing_libs:
         print(f"\n⚠️  Instalar: pip install {' '.join(missing_libs)}")
@@ -146,6 +146,8 @@ def analyze_schemas():
     
     for schema_file in schema_files:
         filename = os.path.basename(schema_file)
+        if filename.startswith('__'): # Ignorar __init__.py
+            continue
         print_section(f"Schema: {filename}")
         
         try:
@@ -157,26 +159,49 @@ def analyze_schemas():
             models_found = []
             id_fields = []
             
+            # Extract models and their fields for more detailed schema info
+            current_model_name = None
+            current_model_fields = {}
+            
             for i, line in enumerate(lines):
                 line_clean = line.strip()
                 
-                # Buscar campos ID problemáticos
-                if any(id_pattern in line_clean.lower() for id_pattern in ['id:', 'id_cliente:', 'client_id:', 'user_id:']):
-                    id_fields.append(f"Línea {i+1}: {line_clean}")
-                
-                # Buscar Enums y Literals
-                if any(keyword in line_clean for keyword in ['Literal[', 'Enum', 'class.*Enum']):
-                    enums_found.append(f"Línea {i+1}: {line_clean}")
-                
-                # Buscar modelos
+                # Detect Pydantic Models
                 if line_clean.startswith('class ') and 'BaseModel' in line_clean:
+                    model_match = line_clean.split('(')[0].replace('class ', '').strip()
                     models_found.append(f"Línea {i+1}: {line_clean}")
+                    current_model_name = model_match
+                    current_model_fields = {} # Reset for new model
+                    
+                elif current_model_name and not line_clean.startswith(('import', 'from', '#', '"""', 'class ')) and ':' in line_clean:
+                    # Detect fields within the current model
+                    field_name_part = line_clean.split(':')[0].strip()
+                    type_hint_part = line_clean.split(':', 1)[1].split('=')[0].strip()
+
+                    is_optional = 'Optional[' in type_hint_part
+                    is_literal = 'Literal[' in type_hint_part
+                    
+                    current_model_fields[field_name_part] = {
+                        'type_hint': type_hint_part,
+                        'is_optional': is_optional,
+                        'is_literal': is_literal,
+                        'line_num': i+1
+                    }
+                    
+                    # Buscar campos ID
+                    if any(id_pattern in field_name_part.lower() for id_pattern in ['id', 'id_cliente', 'client_id', 'user_id']):
+                        id_fields.append(f"Línea {i+1}: {line_clean}")
+                    
+                    # Buscar Enums y Literals
+                    if is_literal:
+                        enums_found.append(f"Línea {i+1}: {line_clean}")
             
             schemas_info[filename] = {
                 'enums': enums_found,
                 'models': models_found,
                 'id_fields': id_fields,
-                'path': schema_file
+                'path': schema_file,
+                'fields': current_model_fields # Store fields for the *last* model found in the file
             }
             
             if id_fields:
@@ -185,15 +210,19 @@ def analyze_schemas():
                     print(f"    {id_field}")
             
             if enums_found:
-                print("  📋 ENUMs encontrados:")
+                print("  📋 ENUMs/Literals encontrados:")
                 for enum in enums_found:
                     print(f"    {enum}")
             
             if models_found:
-                print("  📋 Modelos encontrados:")
+                print("  📋 Modelos Pydantic encontrados:")
                 for model in models_found:
                     print(f"    {model}")
-                    
+                if current_model_fields:
+                    print("  📋 Campos del último modelo Pydantic:")
+                    for field_name, field_info in current_model_fields.items():
+                        print(f"    - {field_name}: {field_info['type_hint']} (Línea {field_info['line_num']})")
+
         except Exception as e:
             print(f"  ❌ Error leyendo {filename}: {e}")
     
@@ -225,122 +254,234 @@ def analyze_db_dump():
         print(f"❌ CSV dump no encontrado en ubicaciones:")
         for path in possible_paths:
             print(f"  - {path}")
-        return {}
+        return None # Devuelve None para indicar que no se encontró el CSV
     
     try:
-        # Intentar con pandas primero, si no está usar csv
-        try:
-            import pandas as pd
-            df = pd.read_csv(csv_found)
-            print(f"✅ CSV cargado: {len(df)} filas (usando pandas)")
+        import pandas as pd
+        df = pd.read_csv(csv_found)
+        print(f"✅ CSV cargado: {len(df)} filas (usando pandas)")
+        
+        # Analizar inconsistencias schema vs DB
+        verificar_inconsistencias_schemas(df)
+        
+        # Analizar tabla bitacora específicamente
+        print_section("Tabla BITACORA")
+        bitacora_fields = df[df['tabla'] == 'bitacora']
+        
+        if len(bitacora_fields) > 0:
+            print("📋 Campos de bitacora:")
+            for _, row in bitacora_fields.iterrows():
+                print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
             
-            # Analizar inconsistencias schema vs DB
-            verificar_inconsistencias_schemas(df)
-            
-            # Analizar tabla bitacora específicamente
-            print_section("Tabla BITACORA")
-            bitacora_fields = df[df['tabla'] == 'bitacora']
-            
-            if len(bitacora_fields) > 0:
-                print("📋 Campos de bitacora:")
-                for _, row in bitacora_fields.iterrows():
-                    print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
-                
-                # ENUMs específicos
-                enum_fields = bitacora_fields[bitacora_fields['formato_sql'].str.contains('USER-DEFINED|enum', na=False)]
-                if len(enum_fields) > 0:
-                    print("\n🔍 Campos ENUM en bitacora:")
-                    for _, row in enum_fields.iterrows():
-                        print(f"  - {row['campo']}:")
-                        print(f"    SQL: {row['formato_sql']}")
-                        print(f"    Pydantic: {row['tipo_pydantic']}")
-                        print(f"    Restricciones: {row['restricciones']}")
+            # ENUMs específicos
+            enum_fields_db = bitacora_fields[bitacora_fields['formato_sql'].str.contains('USER-DEFINED|enum', na=False)]
+            if len(enum_fields_db) > 0:
+                print("\n🔍 Campos ENUM en bitacora (definición SQL):")
+                for _, row in enum_fields_db.iterrows():
+                    print(f"  - {row['campo']}:")
+                    print(f"    SQL: {row['formato_sql']}")
+                    print(f"    Pydantic (dump): {row['tipo_pydantic']}")
+                    print(f"    Restricciones: {row['restricciones']}")
             else:
-                print("❌ No se encontraron campos para tabla 'bitacora'")
-            
-            # Todas las tablas disponibles
-            print_section("Tablas Disponibles")
-            tablas = df['tabla'].unique()
-            print(f"Total tablas: {len(tablas)}")
-            for tabla in sorted(tablas):
-                count = len(df[df['tabla'] == tabla])
-                print(f"  - {tabla}: {count} campos")
-                
-        except ImportError:
-            # Fallback sin pandas
-            import csv
-            with open(csv_found, 'r') as f:
-                reader = csv.DictReader(f)
-                data = list(reader)
-            print(f"✅ CSV cargado: {len(data)} filas (usando csv)")
-            
-            bitacora_fields = [row for row in data if row['tabla'] == 'bitacora']
-            if bitacora_fields:
-                print_section("Tabla BITACORA")
-                for row in bitacora_fields:
-                    print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
+                print("❌ No se encontraron campos ENUM definidos por usuario para tabla 'bitacora'")
+        else:
+            print("❌ No se encontraron campos para tabla 'bitacora'")
         
-        return {'csv_path': csv_found, 'total_filas': len(data) if 'data' in locals() else len(df)}
-        
+        # Todas las tablas disponibles
+        print_section("Tablas Disponibles")
+        tablas = df['tabla'].unique()
+        print(f"Total tablas: {len(tablas)}")
+        for tabla in sorted(tablas):
+            count = len(df[df['tabla'] == tabla])
+            print(f"  - {tabla}: {count} campos")
+            
+        return {'csv_path': csv_found, 'total_filas': len(df), 'df': df}
+            
+    except ImportError:
+        print("⚠️  Pandas no está instalado. Análisis de CSV limitado.")
+        import csv
+        with open(csv_found, 'r') as f:
+            reader = csv.DictReader(f)
+            data = list(reader)
+        print(f"✅ CSV cargado: {len(data)} filas (usando csv nativo)")
+        return {'csv_path': csv_found, 'total_filas': len(data), 'data': data}
+            
     except Exception as e:
         print(f"❌ Error analizando CSV: {e}")
-        return {}
+        return None
 
-def verificar_inconsistencias_schemas(df):
+def verificar_inconsistencias_schemas(df_db_dump):
     """Detecta inconsistencias entre schemas Pydantic y estructura DB"""
-    print_header("VERIFICACIÓN DE INCONSISTENCIAS SCHEMA vs DB")
+    print_header("VERIFICACIÓN DE INCONSISTENCIAS SCHEMA Pydantic vs DB")
     
     inconsistencias = []
+    schemas_info = analyze_schemas() # Vuelve a obtener la info de los schemas
     
-    # Verificar tabla clientes
-    clientes_db = df[df['tabla'] == 'clientes']
-    clientes_id_fields = clientes_db[clientes_db['campo'].str.contains('id', case=False, na=False)]
+    if not schemas_info:
+        print("⚠️ No se pudieron cargar los schemas Pydantic para la verificación.")
+        return
     
-    if len(clientes_id_fields) > 0:
-        campos_id_db = clientes_id_fields['campo'].tolist()
-        print(f"📋 Campos ID en DB clientes: {campos_id_db}")
+    # === 1. Verificar inconsistencias de campos ID (Revisado) ===
+    print_section("Verificación de campos ID")
+    for filename, schema_data in schemas_info.items():
+        table_name = filename.replace('.py', '') # Asume que el nombre del archivo es el nombre de la tabla
         
-        if 'id_cliente' in campos_id_db and 'id' not in campos_id_db:
-            inconsistencias.append({
-                'tabla': 'clientes',
-                'problema': "DB usa 'id_cliente' pero schema Pydantic probablemente usa 'id'",
-                'accion': "Cambiar schema clientes.py: id → id_cliente",
-                'impacto': 'CRÍTICO - FunctionTools fallarán'
-            })
-    
-    # Verificar tabla bitacora
-    bitacora_db = df[df['tabla'] == 'bitacora']
-    user_fields = bitacora_db[bitacora_db['campo'].str.contains('user|client', case=False, na=False)]
-    
-    if len(user_fields) > 0:
-        campo_user_db = user_fields.iloc[0]['campo']
-        print(f"📋 Campo usuario en DB bitacora: {campo_user_db}")
+        # Excepciones donde el nombre del archivo no es el nombre de la tabla directamente
+        if table_name == 'session_context': # No es una tabla de DB directa
+            continue
         
-        if campo_user_db == 'user_id':
-            print("✅ Campo user_id correcto en bitacora")
-    
-    # Verificar problemas con catalogos
-    catalogos_db = df[df['tabla'] == 'catalogos']
-    if len(catalogos_db) > 0:
-        campos_catalogos = catalogos_db['campo'].tolist()
-        if 'nombre_catalogo' not in campos_catalogos:
-            inconsistencias.append({
-                'tabla': 'bitacora',
-                'problema': "Trigger busca 'nombre_catalogo' que no existe en tabla catalogos",
-                'accion': "Verificar triggers en Supabase o agregar campo nombre_catalogo",
-                'impacto': 'CRÍTICO - INSERT en bitacora falla'
+        db_table_fields = df_db_dump[df_db_dump['tabla'] == table_name]
+        if db_table_fields.empty:
+            # print(f"⚠️  Tabla '{table_name}' del schema no encontrada en el dump de DB.")
+            continue
+
+        pydantic_id_fields = [f.split(':')[0].strip() for f in schema_data.get('id_fields', [])]
+        db_id_fields = db_table_fields[db_table_fields['campo'].str.contains('id', case=False, na=False)]['campo'].tolist()
+
+        if pydantic_id_fields and db_id_fields:
+            # Para la tabla clientes, el id_cliente ya es correcto en el schema
+            # Si el schema tiene 'id_cliente' y la DB tiene 'id_cliente', es consistente
+            if 'clientes.py' in filename:
+                if 'id_cliente' in pydantic_id_fields and 'id_cliente' in db_id_fields:
+                    print(f"✅ ID de cliente en '{table_name}': Consistente (id_cliente)")
+                elif 'id' in pydantic_id_fields and 'id_cliente' in db_id_fields:
+                    inconsistencias.append({
+                        'tabla': table_name,
+                        'problema': f"El schema Pydantic usa 'id' pero la DB usa 'id_cliente'.",
+                        'accion': f"Cambiar campo 'id' por 'id_cliente' en schemas/{filename}.",
+                        'impacto': 'CRÍTICO - Fallas en FunctionTools.'
+                    })
+                else:
+                    # Otros casos de ID que pueden ser inconsistentes
+                    for p_id in pydantic_id_fields:
+                        if p_id not in db_id_fields and f"id_{table_name}" not in db_id_fields: # Más general
+                            inconsistencias.append({
+                                'tabla': table_name,
+                                'problema': f"Campo ID '{p_id}' en schema Pydantic no coincide con los campos ID en la DB: {db_id_fields}.",
+                                'accion': f"Asegurar que los campos ID del schema Pydantic ({p_id}) coincidan con la DB o viceversa.",
+                                'impacto': 'ALTO - Posibles fallas en inserciones/consultas.'
+                            })
+
+            elif set(pydantic_id_fields) != set(db_id_fields):
+                inconsistencias.append({
+                    'tabla': table_name,
+                    'problema': f"Campos ID inconsistentes. Pydantic: {pydantic_id_fields}, DB: {db_id_fields}.",
+                    'accion': f"Asegurar que los campos ID en schemas/{filename} coincidan con la DB.",
+                    'impacto': 'ALTO - Posibles fallas en FunctionTools.'
+                })
+            else:
+                 print(f"✅ ID de '{table_name}': Consistente. (Pydantic: {pydantic_id_fields}, DB: {db_id_fields})")
+        
+        elif pydantic_id_fields and not db_id_fields:
+             inconsistencias.append({
+                'tabla': table_name,
+                'problema': f"Schema Pydantic tiene campos ID ({pydantic_id_fields}), pero la DB no los tiene o no fueron detectados.",
+                'accion': f"Verificar que la tabla '{table_name}' en DB tenga campos ID y sean detectados en el dump.",
+                'impacto': 'ALTO - Posibles fallas en FunctionTools.'
             })
+        elif not pydantic_id_fields and db_id_fields:
+            print(f"⚠️  Schema Pydantic de '{table_name}' no tiene campos ID detectados, pero la DB sí: {db_id_fields}.")
+            # No se agrega como inconsistencia crítica a menos que cause un error conocido
+        else:
+             print(f"ℹ️  Tabla '{table_name}': No se detectaron campos ID críticos.")
     
+    # === 2. Verificar Optional Pydantic vs NOT NULL en DB ===
+    print_section("Verificación de Optional Pydantic vs NOT NULL DB")
+    for filename, schema_data in schemas_info.items():
+        table_name = filename.replace('.py', '')
+        
+        if table_name == 'session_context':
+            continue
+
+        db_table_fields = df_db_dump[df_db_dump['tabla'] == table_name]
+        if db_table_fields.empty:
+            continue
+        
+        if 'fields' in schema_data:
+            for field_name, field_info in schema_data['fields'].items():
+                pydantic_is_optional = field_info['is_optional']
+                
+                db_field_row = db_table_fields[db_table_fields['campo'] == field_name]
+                if not db_field_row.empty:
+                    db_is_not_null = 'NOT NULL' in str(db_field_row.iloc[0]['restricciones']).upper()
+                    
+                    if pydantic_is_optional and db_is_not_null:
+                        inconsistencias.append({
+                            'tabla': table_name,
+                            'campo': field_name,
+                            'problema': f"Campo '{field_name}' es Optional en Pydantic pero NOT NULL en la DB.",
+                            'accion': f"Hacer el campo NOT NULL en Pydantic o permitir NULL en la DB.",
+                            'impacto': 'CRÍTICO - Fallará en inserciones/actualizaciones.'
+                        })
+                    elif not pydantic_is_optional and not db_is_not_null and field_name != 'id': # 'id' es autoincremental/nullable usualmente
+                         # Esto es solo un warning si un campo NO es opcional en Pydantic pero es NULLABLE en DB
+                         # print(f"ℹ️  '{table_name}.{field_name}': Pydantic no opcional, DB NULLABLE. Puede ser intencional.")
+                         pass
+                    else:
+                        print(f"✅ '{table_name}.{field_name}': Consistencia de nulabilidad OK.")
+                else:
+                    print(f"⚠️  Campo '{field_name}' del schema '{table_name}' no encontrado en el dump de DB. No se pudo verificar nulabilidad.")
+
+    # === 3. Verificar ENUMs de DB vs Literal/str de Pydantic ===
+    print_section("Verificación de ENUMs (DB) vs Literals (Pydantic)")
+    for filename, schema_data in schemas_info.items():
+        table_name = filename.replace('.py', '')
+        
+        if table_name == 'session_context':
+            continue
+        
+        db_table_fields = df_db_dump[df_db_dump['tabla'] == table_name]
+        if db_table_fields.empty:
+            continue
+
+        if 'fields' in schema_data:
+            for field_name, field_info in schema_data['fields'].items():
+                pydantic_is_literal = field_info['is_literal']
+                pydantic_type_hint = field_info['type_hint']
+
+                db_field_row = db_table_fields[db_table_fields['campo'] == field_name]
+                if not db_field_row.empty:
+                    db_sql_format = str(db_field_row.iloc[0]['formato_sql']).lower()
+                    db_is_enum = 'user-defined' in db_sql_format or 'enum' in db_sql_format
+                    
+                    if pydantic_is_literal and not db_is_enum:
+                        inconsistencias.append({
+                            'tabla': table_name,
+                            'campo': field_name,
+                            'problema': f"Campo '{field_name}' es Literal en Pydantic pero no un ENUM definido por usuario en la DB ('{db_sql_format}').",
+                            'accion': "Asegurar que el tipo de campo en la DB sea un ENUM o cambiar el tipo en Pydantic.",
+                            'impacto': 'ALTO - Inconsistencia de tipo. Puede causar errores.'
+                        })
+                    elif not pydantic_is_literal and db_is_enum:
+                        inconsistencias.append({
+                            'tabla': table_name,
+                            'campo': field_name,
+                            'problema': f"Campo '{field_name}' es un ENUM en la DB ('{db_sql_format}') pero no es Literal en Pydantic ('{pydantic_type_hint}').",
+                            'accion': "Usar Literal en el schema Pydantic para este campo o cambiar el tipo en la DB.",
+                            'impacto': 'ALTO - Puede causar errores de "operator does not exist" o validación.'
+                        })
+                    elif pydantic_is_literal and db_is_enum:
+                         print(f"✅ '{table_name}.{field_name}': Consistencia ENUM/Literal OK.")
+                    else:
+                        # print(f"ℹ️ '{table_name}.{field_name}': No es ENUM/Literal o consistencia de tipo OK.")
+                        pass # No es un caso de ENUM/Literal o son consistentes
+
+                else:
+                    print(f"⚠️  Campo '{field_name}' del schema '{table_name}' no encontrado en el dump de DB. No se pudo verificar tipo ENUM.")
+
+
     # Reportar inconsistencias
     if inconsistencias:
         print("\n🚨 INCONSISTENCIAS CRÍTICAS DETECTADAS:")
         for inc in inconsistencias:
-            print(f"\n  ❌ TABLA: {inc['tabla']}")
+            print(f"\n  ❌ TABLA: {inc.get('tabla', 'N/A')}")
+            if 'campo' in inc:
+                print(f"     CAMPO: {inc['campo']}")
             print(f"     PROBLEMA: {inc['problema']}")
             print(f"     ACCIÓN: {inc['accion']}")
             print(f"     IMPACTO: {inc['impacto']}")
     else:
-        print("✅ No se detectaron inconsistencias críticas")
+        print("✅ No se detectaron inconsistencias críticas en el mapeo Schema vs DB.")
     
     return inconsistencias
 
@@ -357,7 +498,7 @@ def test_table_access(client, table_name='clientes'):
         print(f"✅ SELECT en {table_name}: OK")
         
         if response.data:
-            print("📋 Estructura real de la tabla:")
+            print("📋 Estructura real de la tabla (primer registro):")
             sample_record = response.data[0]
             for field, value in sample_record.items():
                 print(f"  - {field}: {type(value).__name__}")
@@ -402,8 +543,9 @@ def check_function_tools():
                 if line_clean.startswith('def ') and not line_clean.startswith('def __'):
                     functions.append(line_clean)
                 
-                # Buscar uso problemático de client_id vs id_cliente
-                if 'client_id' in line_clean or 'id_cliente' in line_clean:
+                # Buscar uso problemático de client_id vs id_cliente (ahora más informativo)
+                if ('client_id' in line_clean or 'id_cliente' in line_clean) and \
+                   ('clientes' in filename or 'bitacora' in filename or 'entidades' in filename or 'sesiones' in filename): # Solo si es relevante para esas tablas
                     client_id_usage.append(f"Línea {i+1}: {line_clean}")
             
             tools_info[filename] = {
@@ -416,10 +558,14 @@ def check_function_tools():
                 print(f"    - {func}")
             
             if client_id_usage:
-                print(f"  🔍 Uso de client_id/id_cliente:")
-                for usage in client_id_usage[:3]:  # Solo mostrar primeros 3
+                print(f"  🔍 Uso de client_id/id_cliente (posible inconsistencia):")
+                for usage in client_id_usage[:5]:  # Solo mostrar primeros 5
                     print(f"    {usage}")
-                    
+                if len(client_id_usage) > 5:
+                    print(f"    ...y {len(client_id_usage) - 5} más líneas.")
+            else:
+                 print(f"  ✅ Uso de 'client_id'/'id_cliente' parece consistente en este archivo.")
+                
         except Exception as e:
             print(f"  ❌ Error leyendo {filename}: {e}")
     
@@ -434,14 +580,18 @@ def generate_report():
     env_ok = check_environment()
     creds_ok = check_credentials()
     client = test_supabase_connection()
-    schemas_info = analyze_schemas()
-    db_info = analyze_db_dump()
+    schemas_info = analyze_schemas() # Se usa internamente en verificar_inconsistencias_schemas
+    db_info = analyze_db_dump() # Se usa internamente en verificar_inconsistencias_schemas
     tools_info = check_function_tools()
+    
+    all_critical_ok = env_ok and creds_ok and (client is not None) and (db_info is not None)
     
     if client:
         table_ok = test_table_access(client, 'clientes')
+        all_critical_ok = all_critical_ok and table_ok
     else:
         table_ok = False
+        all_critical_ok = False # Si no hay cliente, no puede estar todo crítico OK
     
     # Resumen final
     print_header("RESUMEN EJECUTIVO")
@@ -450,17 +600,18 @@ def generate_report():
         ("Entorno Python", "✅" if env_ok else "❌"),
         ("Credenciales Supabase", "✅" if creds_ok else "❌"),
         ("Conexión DB", "✅" if client else "❌"),
-        ("Acceso Tablas", "✅" if table_ok else "❌"),
-        ("Schemas Encontrados", f"✅ {len(schemas_info)}" if schemas_info else "❌"),
-        ("DB Dump", "✅" if db_info else "❌"),
+        ("Acceso Tablas (clientes)", "✅" if table_ok else "❌"),
+        ("Schemas Pydantic", f"✅ {len(schemas_info)}" if schemas_info else "❌"),
+        ("DB Dump (CSV)", "✅" if db_info else "❌"),
         ("Function Tools", f"✅ {len(tools_info)}" if tools_info else "❌"),
     ]
     
     for item, status in status_items:
         print(f"{status} {item}")
     
-    all_critical_ok = env_ok and creds_ok and client and table_ok
-    print(f"\n🎯 ESTADO GENERAL: {'✅ LISTO PARA DESARROLLO' if all_critical_ok else '⚠️ REQUIERE ATENCIÓN'}")
+    print(f"\n🎯 ESTADO GENERAL: {'✅ LISTO PARA DESARROLLO' if all_critical_ok and not verificar_inconsistencias_schemas(db_info['df']) else '⚠️ REQUIERE ATENCIÓN'}")
+    # Nota: Se llama verificar_inconsistencias_schemas de nuevo para el reporte final.
+    # Se pasa df_info['df'] si db_info no es None.
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -480,6 +631,8 @@ if __name__ == "__main__":
             analyze_db_dump()
         elif command == 'tools':
             check_function_tools()
+        elif command == 'all': # Nuevo comando para ejecutar todo
+            generate_report()
         else:
             print(__doc__)
     else:
