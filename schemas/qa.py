@@ -13,6 +13,6 @@ class QaModel(BaseModel):
     evaluacion: Literal[1, -1]
     impacto: int
     detalle: Optional[str]
-    LLM: Optional[str]
+    llm: Optional[str]
     metadata: Optional[dict]
     created_at: datetime

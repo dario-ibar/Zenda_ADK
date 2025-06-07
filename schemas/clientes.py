@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from uuid import UUID
@@ -9,15 +8,16 @@ class ClienteModel(BaseModel):
     alias: str
     pais: Optional[str]
     genero: Literal['M', 'F', 'X']
-    fecha_nacimiento: date
+    fecha_nacimiento: Optional[date]
     email: Optional[EmailStr]
     whatsapp: Optional[str]
     mail_trastorno: Optional[str]
     canal: Optional[str]
+    canal_info: Optional[str]
     cod_mktg: Optional[str]
     fecha_alta: datetime
     estado: Optional[str]
     preferencias: Optional[dict]
     codigo_personal: Optional[str]
     ash: UUID
-    modo_test: bool
+    modo_test: Optional[bool]
