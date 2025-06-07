@@ -30,7 +30,6 @@ catalogos,nombre_catalogo,null,text,NULL,null,❌ Falta
 clientes,id_cliente,"Identificador único del cliente (UUID, clave primaria)",uuid,NOT NULL,UUID,✅ Ok
 clientes,alias,Apodo visible en sesión. No tiene por qué ser el nombre real,text,NOT NULL,str,✅ Ok
 clientes,pais,País de residencia del cliente. Debe estar en catálogo,text,NULL,Optional[str],✅ Ok
-clientes,genero,"Género declarado: M (masculino), F (femenino), X (otro)",text,NULL,"Literal['M','F','X']",❌ Incoherente
 clientes,fecha_nacimiento,Fecha de nacimiento. Campo obligatorio para uso en Zenda,date,NULL,date,✅ Ok
 clientes,email,Correo electrónico del cliente.,text,NULL,Optional[EmailStr],✅ Ok
 clientes,whatsapp,Número de WhatsApp del cliente.,text,NULL,Optional[str],✅ Ok
@@ -44,6 +43,7 @@ clientes,codigo_personal,Código interno o personal del cliente.,text,NULL,Optio
 clientes,cod_mktg,Código de campaña o acuerdo de marketing (FK a marketing.cod_mktg),text,NULL,Optional[str],✅ Ok
 clientes,ash,Identificador seguro y único para el cliente (UUID generado automáticamente).,uuid,NULL,UUID,✅ Ok
 clientes,modo_test,"Indica si el cliente está habilitado para modo de prueba (test). Si es TRUE, permite acceso a sus registros en la tabla bitacora mediante la política RLS de acceso de pruebas.",boolean,NULL,bool,✅ Ok
+clientes,genero,null,USER-DEFINED,NULL,"Literal['M','F','X']",✅ Ok
 ctacte,id,ID único del movimiento en cuenta corriente,bigint,NOT NULL,int,✅ Ok
 ctacte,id_cliente,ID del cliente al que pertenece el movimiento (FK a clientes),uuid,NOT NULL,UUID,✅ Ok
 ctacte,timestamp,Fecha y hora del movimiento,timestamp with time zone,NULL,datetime,✅ Ok
@@ -100,13 +100,13 @@ qa,id,ID único del análisis puntual de calidad,bigint,NOT NULL,int,✅ Ok
 qa,session_id,ID de la sesión evaluada (FK a sesiones.id_sesion),uuid,NOT NULL,UUID,✅ Ok
 qa,evento_id,ID del evento específico de la bitácora evaluado (FK a bitacora.id),bigint,NOT NULL,int,✅ Ok
 qa,codigo_pauta,Código de la pauta evaluada en este reporte (FK a pautas.codigo),text,NOT NULL,str,✅ Ok
-qa,tipo_evaluacion,"Tipo de evaluación: ad = adherencia, ef = efectividad",text,NOT NULL,"Literal['ad', 'ef']",❌ Incoherente
-qa,evaluacion,"Resultado de la evaluación: 1 = correcta, -1 = incorrecta o omitida",integer,NOT NULL,"Literal[1, -1]",❌ Incoherente
 qa,impacto,Peso o relevancia de la pauta evaluada,integer,NOT NULL,int,✅ Ok
 qa,detalle,Comentario textual explicativo del agente QA,text,NULL,Optional[str],✅ Ok
 qa,llm,"Modelo utilizado para la evaluación (ej. GPT-4, Gemini-Pro, Humano)",text,NULL,null,❌ Falta
 qa,metadata,Información adicional estructurada de la evaluación (formato JSONB),jsonb,NULL,Optional[dict],✅ Ok
 qa,created_at,Fecha y hora en que se generó este registro de evaluación,timestamp with time zone,NULL,datetime,✅ Ok
+qa,tipo_evaluacion,null,USER-DEFINED,NULL,"Literal['ad', 'ef']",✅ Ok
+qa,evaluacion,null,USER-DEFINED,NULL,"Literal[1, -1]",✅ Ok
 sesiones,id_sesion,"ID único de la sesión (UUID, clave primaria).",uuid,NOT NULL,UUID,✅ Ok
 sesiones,id_cliente,Referencia al cliente (UUID),uuid,NULL,UUID,✅ Ok
 sesiones,fecha_inicio,Fecha y hora de inicio de la sesión,timestamp without time zone,NOT NULL,datetime,✅ Ok
