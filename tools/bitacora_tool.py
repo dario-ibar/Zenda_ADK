@@ -4,7 +4,7 @@ from datetime import datetime
 from schemas import BitacoraModel
 import json
 
-def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, texto: str,
+def bitacora_function(session_id: str, id_cliente: str, actor: str, tipo: str, texto: str,
                      guia: Optional[List[str]] = None, tt: Optional[Literal["S", "F"]] = None,
                      canal: Optional[Literal["T", "S"]] = None) -> bool:
     """
@@ -13,7 +13,7 @@ def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, te
     
     Args:
         session_id: ID de la sesión
-        client_id: ID del cliente 
+        id_cliente: ID del cliente 
         actor: Quién generó el evento (cliente, zenda, dt, qa, sistema)
         tipo: Tipo de entrada (msg, resumen, op, ent, emo, tec, fmem)
         texto: Contenido principal
@@ -24,14 +24,14 @@ def bitacora_function(session_id: str, client_id: str, actor: str, tipo: str, te
     Returns:
         bool: True si el registro fue exitoso
     """
-    print(f"\n[BITACORA_TOOL]: Sesion={session_id}, Cliente={client_id}")
+    print(f"\n[BITACORA_TOOL]: Sesion={session_id}, Cliente={id_cliente}")
     print(f"                  Actor={actor}, Tipo={tipo}")
     print(f"                  Texto='{texto[:50]}...'")
     
     # Preparar datos para BitacoraModel
     entry_data = {
         "session_id": session_id,
-        "user_id": client_id,
+        "user_id": id_cliente,
         "created_at": datetime.now(),
         "actor": actor,
         "event_type": tipo,

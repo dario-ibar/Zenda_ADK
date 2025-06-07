@@ -7,27 +7,27 @@ import uuid
 # Simulación de base de datos (TODO: reemplazar por Supabase)
 _simulated_entities_db = {}
 
-def save_context_info_function(session_id: str, client_id: str, info_type: str, info_content: str) -> Dict[str, Any]:
+def save_context_info_function(session_id: str, id_cliente: str, info_type: str, info_content: str) -> Dict[str, Any]:
     """
     Guarda información muy específica del cliente o muy recurrente (jerga, conceptos)
     como entidad en la base de datos.
     
     Args:
         session_id: ID de la sesión actual
-        client_id: ID del cliente asociado
+        id_cliente: ID del cliente asociado
         info_type: Tipo de información ("Jargon", "Concepto", "DatoRelevante")
         info_content: Contenido textual a guardar
         
     Returns:
         Dict[str, Any]: Resultado de la operación con status y entity_id
     """
-    print(f"\\n[SAVE_CONTEXT_TOOL]: Guardando contexto para cliente {client_id}")
+    print(f"\\n[SAVE_CONTEXT_TOOL]: Guardando contexto para cliente {id_cliente}")
     print(f"                      Tipo: {info_type}")
     print(f"                      Contenido: '{info_content[:50]}...'")
 
     new_entity_id = str(uuid.uuid4())
     entity_data = {
-        "id_cliente": client_id,
+        "id_cliente": id_cliente,
         "tipo_entidad": info_type,
         "nombre_entidad": info_content[:100],
         "datos_entidad": {

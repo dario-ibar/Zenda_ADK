@@ -4,20 +4,18 @@ xDiagnostico.py
 Script de diagnóstico completo para el sistema Zenda.
 
 USO:
-
 - TERMINAL: 
 python xDiagnostico.py [env|creds|db|schemas|dump|tools]
 
 - JUPYTERLAB: 
 import sys
-sys.argv = ['xDiagnostico.py']  # Para reporte completo
+sys.argv = ['xDiagnostico.py']
 exec(open('/home/jupyter/Zenda_ADK/xDiagnostico.py').read())
 
 - JUPYTERLAB SECCIÓN ESPECÍFICA:
 import sys
-sys.argv = ['xDiagnostico.py', 'schemas']  # o env, creds, db, dump, tools
+sys.argv = ['xDiagnostico.py', 'schemas']
 exec(open('/home/jupyter/Zenda_ADK/xDiagnostico.py').read())
-
 """
 
 import os
@@ -157,9 +155,14 @@ def analyze_schemas():
             lines = content.split('\n')
             enums_found = []
             models_found = []
+            id_fields = []
             
             for i, line in enumerate(lines):
                 line_clean = line.strip()
+                
+                # Buscar campos ID problemáticos
+                if any(id_pattern in line_clean.lower() for id_pattern in ['id:', 'id_cliente:', 'client_id:', 'user_id:']):
+                    id_fields.append(f"Línea {i+1}: {line_clean}")
                 
                 # Buscar Enums y Literals
                 if any(keyword in line_clean for keyword in ['Literal[', 'Enum', 'class.*Enum']):
@@ -168,16 +171,18 @@ def analyze_schemas():
                 # Buscar modelos
                 if line_clean.startswith('class ') and 'BaseModel' in line_clean:
                     models_found.append(f"Línea {i+1}: {line_clean}")
-                
-                # Buscar campos específicos
-                if any(field in line_clean.lower() for field in ['event_type', 'actor', 'client_id', 'user_id']):
-                    print(f"  🔍 Línea {i+1}: {line_clean}")
             
             schemas_info[filename] = {
                 'enums': enums_found,
                 'models': models_found,
+                'id_fields': id_fields,
                 'path': schema_file
             }
+            
+            if id_fields:
+                print("  🔍 Campos ID encontrados:")
+                for id_field in id_fields:
+                    print(f"    {id_field}")
             
             if enums_found:
                 print("  📋 ENUMs encontrados:")
@@ -229,6 +234,9 @@ def analyze_db_dump():
             df = pd.read_csv(csv_found)
             print(f"✅ CSV cargado: {len(df)} filas (usando pandas)")
             
+            # Analizar inconsistencias schema vs DB
+            verificar_inconsistencias_schemas(df)
+            
             # Analizar tabla bitacora específicamente
             print_section("Tabla BITACORA")
             bitacora_fields = df[df['tabla'] == 'bitacora']
@@ -278,7 +286,65 @@ def analyze_db_dump():
         print(f"❌ Error analizando CSV: {e}")
         return {}
 
-def test_table_access(client, table_name='bitacora'):
+def verificar_inconsistencias_schemas(df):
+    """Detecta inconsistencias entre schemas Pydantic y estructura DB"""
+    print_header("VERIFICACIÓN DE INCONSISTENCIAS SCHEMA vs DB")
+    
+    inconsistencias = []
+    
+    # Verificar tabla clientes
+    clientes_db = df[df['tabla'] == 'clientes']
+    clientes_id_fields = clientes_db[clientes_db['campo'].str.contains('id', case=False, na=False)]
+    
+    if len(clientes_id_fields) > 0:
+        campos_id_db = clientes_id_fields['campo'].tolist()
+        print(f"📋 Campos ID en DB clientes: {campos_id_db}")
+        
+        if 'id_cliente' in campos_id_db and 'id' not in campos_id_db:
+            inconsistencias.append({
+                'tabla': 'clientes',
+                'problema': "DB usa 'id_cliente' pero schema Pydantic probablemente usa 'id'",
+                'accion': "Cambiar schema clientes.py: id → id_cliente",
+                'impacto': 'CRÍTICO - FunctionTools fallarán'
+            })
+    
+    # Verificar tabla bitacora
+    bitacora_db = df[df['tabla'] == 'bitacora']
+    user_fields = bitacora_db[bitacora_db['campo'].str.contains('user|client', case=False, na=False)]
+    
+    if len(user_fields) > 0:
+        campo_user_db = user_fields.iloc[0]['campo']
+        print(f"📋 Campo usuario en DB bitacora: {campo_user_db}")
+        
+        if campo_user_db == 'user_id':
+            print("✅ Campo user_id correcto en bitacora")
+    
+    # Verificar problemas con catalogos
+    catalogos_db = df[df['tabla'] == 'catalogos']
+    if len(catalogos_db) > 0:
+        campos_catalogos = catalogos_db['campo'].tolist()
+        if 'nombre_catalogo' not in campos_catalogos:
+            inconsistencias.append({
+                'tabla': 'bitacora',
+                'problema': "Trigger busca 'nombre_catalogo' que no existe en tabla catalogos",
+                'accion': "Verificar triggers en Supabase o agregar campo nombre_catalogo",
+                'impacto': 'CRÍTICO - INSERT en bitacora falla'
+            })
+    
+    # Reportar inconsistencias
+    if inconsistencias:
+        print("\n🚨 INCONSISTENCIAS CRÍTICAS DETECTADAS:")
+        for inc in inconsistencias:
+            print(f"\n  ❌ TABLA: {inc['tabla']}")
+            print(f"     PROBLEMA: {inc['problema']}")
+            print(f"     ACCIÓN: {inc['accion']}")
+            print(f"     IMPACTO: {inc['impacto']}")
+    else:
+        print("✅ No se detectaron inconsistencias críticas")
+    
+    return inconsistencias
+
+def test_table_access(client, table_name='clientes'):
     """Prueba acceso a tabla específica"""
     print_header(f"PRUEBA DE ACCESO - TABLA {table_name.upper()}")
     
@@ -329,18 +395,31 @@ def check_function_tools():
             
             lines = content.split('\n')
             functions = []
+            client_id_usage = []
             
-            for line in lines:
+            for i, line in enumerate(lines):
                 line_clean = line.strip()
                 if line_clean.startswith('def ') and not line_clean.startswith('def __'):
                     functions.append(line_clean)
+                
+                # Buscar uso problemático de client_id vs id_cliente
+                if 'client_id' in line_clean or 'id_cliente' in line_clean:
+                    client_id_usage.append(f"Línea {i+1}: {line_clean}")
             
-            tools_info[filename] = {'functions': functions}
+            tools_info[filename] = {
+                'functions': functions,
+                'client_id_usage': client_id_usage
+            }
             
             print(f"  ✅ Funciones encontradas: {len(functions)}")
             for func in functions:
                 print(f"    - {func}")
-                
+            
+            if client_id_usage:
+                print(f"  🔍 Uso de client_id/id_cliente:")
+                for usage in client_id_usage[:3]:  # Solo mostrar primeros 3
+                    print(f"    {usage}")
+                    
         except Exception as e:
             print(f"  ❌ Error leyendo {filename}: {e}")
     
@@ -360,7 +439,7 @@ def generate_report():
     tools_info = check_function_tools()
     
     if client:
-        table_ok = test_table_access(client, 'bitacora')
+        table_ok = test_table_access(client, 'clientes')
     else:
         table_ok = False
     

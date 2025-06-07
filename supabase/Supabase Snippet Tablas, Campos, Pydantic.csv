@@ -26,6 +26,7 @@ catalogos,activo,Indica si el valor del catálogo está activo (TRUE) o desactiv
 catalogos,created_at,Fecha y hora de creación del registro en el catálogo.,timestamp with time zone,NOT NULL,null,❌ Falta
 catalogos,tabla_destino,Nombre real de la tabla donde se aplica este catálogo,text,NULL,null,❌ Falta
 catalogos,campo_destino,Nombre real del campo al que se aplica el catálogo,text,NULL,null,❌ Falta
+catalogos,nombre_catalogo,null,text,NULL,null,❌ Falta
 clientes,id_cliente,"Identificador único del cliente (UUID, clave primaria)",uuid,NOT NULL,UUID,✅ Ok
 clientes,alias,Apodo visible en sesión. No tiene por qué ser el nombre real,text,NOT NULL,str,✅ Ok
 clientes,pais,País de residencia del cliente. Debe estar en catálogo,text,NULL,Optional[str],✅ Ok

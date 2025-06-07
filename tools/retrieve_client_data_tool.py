@@ -5,7 +5,7 @@ import json
 
 # Simulación de base de datos (TODO: reemplazar por Supabase real)
 _simulated_db_clients = {
-    "test_client_id_1": {
+    "test_id_cliente_1": {
         "preferencias": {"idioma": "es", "tono": "cercano", "voz": "femenina", "canal_comunicacion": "T"},
         "resumen_memoria_larga": "El cliente tiene un conflicto laboral. En sesiones anteriores, expresó frustración y ha trabajado en técnicas de gestión de estrés. Su objetivo actual es mejorar la comunicación en el trabajo.",
         "entidades_iniciales": [
@@ -17,23 +17,23 @@ _simulated_db_clients = {
     }
 }
 
-def retrieve_client_data_function(client_id: str) -> Dict[str, Any]:
+def retrieve_client_data_function(id_cliente: str) -> Dict[str, Any]:
     """
     Recupera datos esenciales del cliente desde la base de datos.
     Esta es una FunctionTool que el Agente DT usará al inicio de la sesión.
     
     Args:
-        client_id: ID único del cliente
+        id_cliente: ID único del cliente
         
     Returns:
         Dict[str, Any]: Diccionario con preferencias, resumen de memoria larga, y entidades iniciales
     """
-    print(f"\\n[RETRIEVE_CLIENT_TOOL]: Recuperando datos para cliente '{client_id}'")
+    print(f"\\n[RETRIEVE_CLIENT_TOOL]: Recuperando datos para cliente '{id_cliente}'")
 
-    data = _simulated_db_clients.get(client_id, {})
+    data = _simulated_db_clients.get(id_cliente, {})
 
     if not data:
-        print(f"       -> CLIENTE NO ENCONTRADO: '{client_id}' - Devolviendo datos por defecto")
+        print(f"       -> CLIENTE NO ENCONTRADO: '{id_cliente}' - Devolviendo datos por defecto")
         return {
             "preferencias": {"idioma": "es", "tono": "profesional", "canal_comunicacion": "T"},
             "resumen_memoria_larga": None,

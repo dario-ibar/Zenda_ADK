@@ -7,7 +7,7 @@ import uuid
 # Simulación de base de datos en memoria (TODO: reemplazar por Supabase)
 _simulated_entities_db = {}
 
-def entidades_function(session_id: str, client_id: str, action: str, 
+def entidades_function(session_id: str, id_cliente: str, action: str, 
                       entity_data: Optional[Dict[str, Any]] = None,
                       entity_id: Optional[str] = None) -> Dict[str, Any]:
     """
@@ -15,7 +15,7 @@ def entidades_function(session_id: str, client_id: str, action: str,
     
     Args:
         session_id: ID de la sesión actual
-        client_id: ID del cliente asociado
+        id_cliente: ID del cliente asociado
         action: Acción a realizar ("guardar", "actualizar", "leer", "eliminar")
         entity_data: Datos de la entidad para guardar/actualizar (opcional)
         entity_id: ID de la entidad para leer/actualizar/eliminar (opcional)
@@ -23,7 +23,7 @@ def entidades_function(session_id: str, client_id: str, action: str,
     Returns:
         Dict[str, Any]: Resultado de la operación con status y datos
     """
-    print(f"\\n[ENTIDADES_TOOL]: Acción '{action}' para cliente {client_id}")
+    print(f"\\n[ENTIDADES_TOOL]: Acción '{action}' para cliente {id_cliente}")
     
     if action == "guardar":
         if not entity_data:
@@ -32,7 +32,7 @@ def entidades_function(session_id: str, client_id: str, action: str,
         new_entity_id = str(uuid.uuid4())
         
         entity_entry = {
-            "id_cliente": client_id,
+            "id_cliente": id_cliente,
             "tipo_entidad": entity_data.get("tipo_entidad", "Concepto"),
             "nombre_entidad": entity_data.get("nombre_entidad", ""),
             "datos_entidad": entity_data.get("datos_entidad", {}),
