@@ -5,7 +5,8 @@ Script de diagnóstico completo para el sistema Zenda.
 
 USO:
 
-- TERMINAL: python xDiagnostico.py [env|creds|db|schemas|dump|tools]
+- TERMINAL: 
+python xDiagnostico.py [env|creds|db|schemas|dump|tools]
 
 - JUPYTERLAB: 
 import sys
@@ -29,7 +30,7 @@ from pathlib import Path
 # Configuración
 PROJECT_ROOT = '/home/jupyter/Zenda_ADK'
 SCHEMAS_PATH = f'{PROJECT_ROOT}/schemas'
-CSV_DUMP_PATH = f'{PROJECT_ROOT}/Supabase Snippet Tablas Campos Pydantic.csv'
+CSV_DUMP_PATH = f'{PROJECT_ROOT}/supabase/Supabase Snippet Tablas, Campos, Pydantic.csv'
 
 def print_header(title):
     """Imprime un header formateado"""
@@ -200,8 +201,8 @@ def analyze_db_dump():
     # Buscar CSV en múltiples ubicaciones
     possible_paths = [
         CSV_DUMP_PATH,
-        f'{PROJECT_ROOT}/Supabase Snippet Tablas Campos Pydantic 1.csv',
-        f'{PROJECT_ROOT}/Supabase*.csv'
+        f'{PROJECT_ROOT}/supabase/Supabase Snippet Tablas, Campos, Pydantic.csv',
+        f'{PROJECT_ROOT}/supabase/Supabase*.csv'
     ]
     
     csv_found = None
@@ -236,6 +237,16 @@ def analyze_db_dump():
                 print("📋 Campos de bitacora:")
                 for _, row in bitacora_fields.iterrows():
                     print(f"  - {row['campo']}: {row['formato_sql']} ({row['tipo_pydantic']})")
+                
+                # ENUMs específicos
+                enum_fields = bitacora_fields[bitacora_fields['formato_sql'].str.contains('USER-DEFINED|enum', na=False)]
+                if len(enum_fields) > 0:
+                    print("\n🔍 Campos ENUM en bitacora:")
+                    for _, row in enum_fields.iterrows():
+                        print(f"  - {row['campo']}:")
+                        print(f"    SQL: {row['formato_sql']}")
+                        print(f"    Pydantic: {row['tipo_pydantic']}")
+                        print(f"    Restricciones: {row['restricciones']}")
             else:
                 print("❌ No se encontraron campos para tabla 'bitacora'")
             

@@ -1,0 +1,163 @@
+tabla,campo,descripcion_coc,formato_sql,restricciones,tipo_pydantic,verificacion
+bitacora,id,ID único del evento (auto-incremental),bigint,NOT NULL,int,✅ Ok
+bitacora,session_id,ID de la sesión asociada al evento (FK a sesiones.id),uuid,NOT NULL,UUID,✅ Ok
+bitacora,user_id,ID del cliente que participó en la sesión (FK a clientes.id),uuid,NOT NULL,UUID,✅ Ok
+bitacora,invocation_id,ID de la invocación del ADK o motor de agentes que generó este evento,text,NULL,Optional[str],✅ Ok
+bitacora,event_id,"ID específico del evento dentro de la invocación (turno, interacción, etc.)",text,NULL,Optional[str],✅ Ok
+bitacora,created_at,Fecha y hora exacta en que ocurrió el evento,timestamp with time zone,NOT NULL,datetime,✅ Ok
+bitacora,actor,"Quién emitió el evento (user, zenda, dt, qa, system, etc.)",USER-DEFINED,NOT NULL,Literal[...],✅ Ok
+bitacora,event_type,"Tipo funcional del evento (input, respuesta, alerta, pauta_aplicada, etc.)",USER-DEFINED,NOT NULL,Literal[...],✅ Ok
+bitacora,content_text,"Texto visible del evento (lo dicho por el actor, para revisión humana)",text,NULL,Optional[str],✅ Ok
+bitacora,content_raw,"Representación estructurada del contenido, para uso por IA o tools",jsonb,NULL,Optional[dict],✅ Ok
+bitacora,pautas_codigos,Listado textual de códigos de pautas aplicadas en este evento,text,NULL,Optional[str],✅ Ok
+bitacora,status,"Estado del evento (ej. completado, fallido, sin_respuesta, etc.)",USER-DEFINED,NULL,Literal[...],✅ Ok
+bitacora,tags,Etiquetas auxiliares para clasificación libre del evento,ARRAY,NULL,Optional[str],✅ Ok
+bitacora,metadata,Metadatos técnicos o semánticos adicionales (JSONB) del evento,jsonb,NULL,Optional[dict],✅ Ok
+canales,codigo,null,text,NOT NULL,null,❌ Falta
+canales,activo,null,boolean,NULL,null,❌ Falta
+canales,fecha_alta,null,timestamp without time zone,NULL,null,❌ Falta
+canales,descripcion,null,text,NULL,null,❌ Falta
+catalogos,id,"ID único del registro en el catálogo (auto-incremental, clave primaria).",bigint,NOT NULL,null,❌ Falta
+catalogos,nombre_logico,Nombre abstracto del catálogo (ej: tipo_ctacte),text,NOT NULL,null,❌ Falta
+catalogos,valor,Valor específico dentro del catálogo.,text,NOT NULL,null,❌ Falta
+catalogos,descripcion,"Descripción del valor del catálogo, legible para humanos.",text,NULL,null,❌ Falta
+catalogos,metadata,Información adicional en formato JSONB (opcional).,jsonb,NULL,null,❌ Falta
+catalogos,activo,Indica si el valor del catálogo está activo (TRUE) o desactivado (FALSE).,boolean,NOT NULL,null,❌ Falta
+catalogos,created_at,Fecha y hora de creación del registro en el catálogo.,timestamp with time zone,NOT NULL,null,❌ Falta
+catalogos,tabla_destino,Nombre real de la tabla donde se aplica este catálogo,text,NULL,null,❌ Falta
+catalogos,campo_destino,Nombre real del campo al que se aplica el catálogo,text,NULL,null,❌ Falta
+clientes,id_cliente,"Identificador único del cliente (UUID, clave primaria)",uuid,NOT NULL,UUID,✅ Ok
+clientes,alias,Apodo visible en sesión. No tiene por qué ser el nombre real,text,NOT NULL,str,✅ Ok
+clientes,pais,País de residencia del cliente. Debe estar en catálogo,text,NULL,Optional[str],✅ Ok
+clientes,genero,"Género declarado: M (masculino), F (femenino), X (otro)",text,NULL,"Literal['M','F','X']",❌ Incoherente
+clientes,fecha_nacimiento,Fecha de nacimiento. Campo obligatorio para uso en Zenda,date,NULL,date,✅ Ok
+clientes,email,Correo electrónico del cliente.,text,NULL,Optional[EmailStr],✅ Ok
+clientes,whatsapp,Número de WhatsApp del cliente.,text,NULL,Optional[str],✅ Ok
+clientes,mail_trastorno,Email alternativo para derivación o notificaciones especiales (ej.: en contextos de salud mental).,text,NULL,Optional[str],✅ Ok
+clientes,canal,"Canal por el cual llegó el cliente (ej.: B2B, Ads_GO, partners).",text,NULL,Optional[str],✅ Ok
+clientes,canal_info,Información adicional sobre el canal de adquisición del cliente.,text,NULL,null,❌ Falta
+clientes,fecha_alta,Fecha de alta o registro del cliente.,timestamp without time zone,NULL,datetime,✅ Ok
+clientes,estado,"Estado del cliente (ej.: activo, inactivo, referente). Validado contra el catálogo estado_cliente.",text,NULL,Optional[str],✅ Ok
+clientes,preferencias,"Preferencias del cliente en formato JSONB (ej.: configuraciones, intereses).",json,NULL,Optional[dict],✅ Ok
+clientes,codigo_personal,Código interno o personal del cliente.,text,NULL,Optional[str],✅ Ok
+clientes,cod_mktg,Código de campaña o acuerdo de marketing (FK a marketing.cod_mktg),text,NULL,Optional[str],✅ Ok
+clientes,ash,Identificador seguro y único para el cliente (UUID generado automáticamente).,uuid,NULL,UUID,✅ Ok
+clientes,modo_test,"Indica si el cliente está habilitado para modo de prueba (test). Si es TRUE, permite acceso a sus registros en la tabla bitacora mediante la política RLS de acceso de pruebas.",boolean,NULL,bool,✅ Ok
+ctacte,id,ID único del movimiento en cuenta corriente,bigint,NOT NULL,int,✅ Ok
+ctacte,id_cliente,ID del cliente al que pertenece el movimiento (FK a clientes),uuid,NOT NULL,UUID,✅ Ok
+ctacte,timestamp,Fecha y hora del movimiento,timestamp with time zone,NULL,datetime,✅ Ok
+ctacte,tipo,"Tipo de operación (ej. carga, consumo, ajuste), según catálogo tipo_ctacte",text,NOT NULL,str,✅ Ok
+ctacte,moneda,"Moneda de la operación (USD, ARS, ZENDAS), según catálogo moneda",text,NOT NULL,str,✅ Ok
+ctacte,monto,Monto del movimiento en la moneda indicada,double precision,NOT NULL,float,✅ Ok
+ctacte,tokens,"Equivalente en tokens del movimiento. Aplica a todos los movimientos, independientemente del tipo.",integer,NOT NULL,Optional[int],✅ Ok
+ctacte,cpte_nro,Número de comprobante externo o interno (opcional),text,NULL,Optional[str],✅ Ok
+ctacte,origen,"Origen del movimiento (ej. sistema, admin, API)",text,NULL,Optional[str],✅ Ok
+ctacte,detalle,Observaciones libres sobre el movimiento,text,NULL,Optional[str],✅ Ok
+ctacte,saldo_post,Saldo resultante en tokens después de aplicado el movimiento,double precision,NULL,Optional[float],✅ Ok
+entidades,id,null,bigint,NOT NULL,int,✅ Ok
+entidades,id_cliente,null,uuid,NOT NULL,UUID,✅ Ok
+entidades,tipo_entidad,null,text,NOT NULL,str,✅ Ok
+entidades,nombre_entidad,null,text,NOT NULL,str,✅ Ok
+entidades,datos_entidad,null,jsonb,NULL,Optional[dict],✅ Ok
+entidades,tipo_relacion,null,text,NULL,Optional[str],✅ Ok
+entidades,estado,null,text,NULL,Optional[str],✅ Ok
+entidades,created_at,null,timestamp with time zone,NULL,datetime,✅ Ok
+entidades,modified_at,null,timestamp with time zone,NULL,Optional[datetime],✅ Ok
+especialidades,id_especialidad,null,integer,NOT NULL,int,✅ Ok
+especialidades,cod_esp,null,text,NOT NULL,str,✅ Ok
+especialidades,especialidad,null,text,NULL,str,✅ Ok
+especialidades,disciplina,null,text,NULL,str,✅ Ok
+especialidades,rama,null,text,NULL,str,✅ Ok
+especialidades,enfoque,null,text,NULL,str,✅ Ok
+especialidades,prioridad,null,integer,NULL,int,✅ Ok
+marketing,cod_mktg,Código único de la acción o campaña de marketing (clave primaria).,text,NOT NULL,str,✅ Ok
+marketing,canal_tipo,"Tipo general de canal (ej.: B2B, redes, referral). Validado contra el catálogo canal_tipo.",text,NULL,str,✅ Ok
+marketing,canal_info,"Detalle específico del canal o campaña (ej.: nombre del socio, campaña concreta).",text,NULL,null,❌ Falta
+marketing,comision,Porcentaje de comisión acordado (ej.: 0.10 para 10%). Debe estar entre 0 y 1.,double precision,NULL,Optional[float],✅ Ok
+marketing,moneda,Moneda en la que se calculan las comisiones. Validado contra el catálogo moneda.,text,NULL,Optional[str],✅ Ok
+marketing,min_liq,Monto mínimo requerido para liquidar la comisión (en la moneda definida).,double precision,NULL,Optional[float],✅ Ok
+marketing,fecha_desde,Inicio de vigencia de la acción o campaña de marketing.,timestamp with time zone,NULL,Optional[datetime],✅ Ok
+marketing,fecha_hasta,Fin de vigencia de la acción o campaña de marketing (puede ser NULL si sigue activa).,timestamp with time zone,NULL,Optional[datetime],✅ Ok
+marketing,created_at,Fecha y hora de creación del registro.,timestamp with time zone,NULL,datetime,✅ Ok
+origen_token,origen,"Clave primaria: nombre del origen (ej. texto_cliente, think_tool)",text,NOT NULL,str,✅ Ok
+origen_token,descripcion,Descripción de la causa o actividad que genera consumo,text,NOT NULL,str,✅ Ok
+origen_token,aporta_a,Indica si el consumo aporta a tkn_in (entrada) o tkn_out (salida),text,NOT NULL,str,✅ Ok
+pautas,codigo,"ID único de la pauta, definido manualmente, con regla nemotécnica",text,NOT NULL,str,✅ Ok
+pautas,categ,Categoría general a la que pertenece la pauta (referencia a catálogo),text,NULL,str,✅ Ok
+pautas,relev,"Nivel de relevancia de la pauta, de 1 a 5 (siendo 5 la máxima)",integer,NULL,int,✅ Ok
+pautas,pauta,"Lo que debe cumplirse, en una descripción breve y concreta",text,NULL,str,✅ Ok
+pautas,cuando,Condición o momento en el que debe aplicarse la pauta,text,NULL,str,✅ Ok
+pautas,etapa,Nombre de la etapa conversacional donde aplica la pauta (debe corresponder a una entrada válida del catálogo de etapas del sistema),text,NULL,str,✅ Ok
+pautas,keywords,Palabras clave asociadas a la pauta,text,NULL,str,✅ Ok
+pautas,semantica,Versión redactada para la IA de lo que debe cumplirse,text,NULL,str,✅ Ok
+pautas,accion,Acción esperada del agente al activarse la pauta,text,NULL,str,✅ Ok
+pautas,para,Propósito funcional de la acción del agente,text,NULL,str,✅ Ok
+pautas,como,Cómo debe aplicarse técnicamente la pauta,text,NULL,str,✅ Ok
+pautas,marcadores,Criterios de QA para evaluar la correcta aplicación de la pauta,text,NULL,str,✅ Ok
+pautas,created_at,Fecha de creación del registro,timestamp without time zone,NULL,datetime,✅ Ok
+qa,id,ID único del análisis puntual de calidad,bigint,NOT NULL,int,✅ Ok
+qa,session_id,ID de la sesión evaluada (FK a sesiones.id_sesion),uuid,NOT NULL,UUID,✅ Ok
+qa,evento_id,ID del evento específico de la bitácora evaluado (FK a bitacora.id),bigint,NOT NULL,int,✅ Ok
+qa,codigo_pauta,Código de la pauta evaluada en este reporte (FK a pautas.codigo),text,NOT NULL,str,✅ Ok
+qa,tipo_evaluacion,"Tipo de evaluación: ad = adherencia, ef = efectividad",text,NOT NULL,"Literal['ad', 'ef']",❌ Incoherente
+qa,evaluacion,"Resultado de la evaluación: 1 = correcta, -1 = incorrecta o omitida",integer,NOT NULL,"Literal[1, -1]",❌ Incoherente
+qa,impacto,Peso o relevancia de la pauta evaluada,integer,NOT NULL,int,✅ Ok
+qa,detalle,Comentario textual explicativo del agente QA,text,NULL,Optional[str],✅ Ok
+qa,llm,"Modelo utilizado para la evaluación (ej. GPT-4, Gemini-Pro, Humano)",text,NULL,null,❌ Falta
+qa,metadata,Información adicional estructurada de la evaluación (formato JSONB),jsonb,NULL,Optional[dict],✅ Ok
+qa,created_at,Fecha y hora en que se generó este registro de evaluación,timestamp with time zone,NULL,datetime,✅ Ok
+sesiones,id_sesion,"ID único de la sesión (UUID, clave primaria).",uuid,NOT NULL,UUID,✅ Ok
+sesiones,id_cliente,Referencia al cliente (UUID),uuid,NULL,UUID,✅ Ok
+sesiones,fecha_inicio,Fecha y hora de inicio de la sesión,timestamp without time zone,NOT NULL,datetime,✅ Ok
+sesiones,fecha_fin,Fecha y hora de finalización de la sesión,timestamp without time zone,NULL,Optional[datetime],✅ Ok
+sesiones,modo_asistencia,"Modo general de asistencia (ej.: DT, Zenda)",text,NULL,Optional[str],✅ Ok
+sesiones,modo_comunicacion,"Modo de comunicación (ej.: texto, voz)",text,NULL,Optional[str],✅ Ok
+sesiones,finalizo_ok,True si la sesión finalizó correctamente,boolean,NULL,Optional[bool],✅ Ok
+sesiones,uso_tt,Registro del uso de Think Tool (sí/no/detalle),text,NULL,Optional[str],✅ Ok
+sesiones,memoria_fallo,True si hubo problemas con el uso de memoria,boolean,NULL,null,❌ Falta
+sesiones,tokens_total,Cantidad total de tokens utilizados en esta sesión. Derivado del total registrado en la tabla tokens.,integer,NULL,Optional[int],✅ Ok
+sesiones,tkn_in,Tokens de entrada del cliente (prompt o input),integer,NULL,Optional[int],✅ Ok
+sesiones,tkn_out,Tokens de salida generados por Zenda (respuesta),integer,NULL,Optional[int],✅ Ok
+sesiones,tokens_por_minuto,Relación de tokens totales sobre la duración (productividad),double precision,NULL,Optional[float],✅ Ok
+sesiones,observaciones,Observaciones generales de la sesión,text,NULL,Optional[str],✅ Ok
+sesiones,comentario_usuario,Comentario libre ingresado por el usuario sobre la sesión,text,NULL,Optional[str],✅ Ok
+sesiones,usd_costo,Costo total estimado en USD. Calculado a partir de la tabla tokens y las tarifas vigentes.,double precision,NULL,Optional[float],✅ Ok
+sesiones,usd_costo_min,Costo por minuto en USD (usd_costo / duración en minutos),double precision,NULL,Optional[float],✅ Ok
+sesiones,usd_fact,Monto final facturado al cliente por la sesión. Puede coincidir o no con el costo interno.,double precision,NULL,Optional[float],✅ Ok
+sesiones,duracion_minutos,null,double precision,NULL,Optional[float],✅ Ok
+sesiones,historical_summary,"Almacena el resumen acumulativo de la sesión, generado post-sesión por el proceso de QA. (COC)",text,NULL,Optional[str],✅ Ok
+sesiones,csat,Puntaje de satisfacción directa del cliente (escala 1-10),numeric,NULL,Optional[float],✅ Ok
+sesiones,tipo_falla_mem,"Tipos de fallos de memoria detectados (ej. explícita, implícita)",ARRAY,NULL,Optional[List[str]],✅ Ok
+sesiones,fallas_memoria,Cantidad total de fallos de memoria detectados en la sesión,integer,NULL,Optional[int],✅ Ok
+sesiones,adherencia,Score de adherencia a pautas (1 a 10),numeric,NULL,Optional[float],✅ Ok
+sesiones,efectividad,Score de efectividad de ejecución de pautas (1 a 10),numeric,NULL,Optional[float],✅ Ok
+sesiones,q,Score compuesto de calidad: (adherencia × efectividad) / 10,numeric,NULL,Optional[float],✅ Ok
+sesiones,qresumen,Calidad del resumen largo generado por el agente QA (1 a 10),numeric,NULL,Optional[float],✅ Ok
+sesiones,qa_labels,Etiquetas semánticas sobre experiencia del cliente extraídas del comentario,ARRAY,NULL,Optional[List[str]],✅ Ok
+sesiones,comentario_qa,Comentario interpretativo general del agente QA sobre la sesión,text,NULL,Optional[str],✅ Ok
+sesiones,llm_qa_usado,Modelo utilizado para realizar la evaluación de calidad de la sesión,text,NULL,Optional[str],✅ Ok
+tarifas,id,"ID único del registro de tarifas (auto-incremental, clave primaria).",bigint,NOT NULL,int,✅ Ok
+tarifas,modelo_llm,"Modelo LLM o tecnología utilizada (ej. Gemini, Whisper)",text,NOT NULL,str,✅ Ok
+tarifas,origen,"Actividad u origen del consumo, vinculado a la tabla origenes",text,NOT NULL,str,✅ Ok
+tarifas,unidad,"Unidad de medida: tokens, segundos, caracteres, etc.",text,NOT NULL,str,✅ Ok
+tarifas,costo_usd_unitario,Costo unitario en USD (lo que pagás),double precision,NOT NULL,float,✅ Ok
+tarifas,precio_usd_unitario,Precio unitario en USD (lo que facturás),double precision,NOT NULL,Optional[float],✅ Ok
+tarifas,fecha_desde,Inicio de vigencia de esta tarifa,timestamp with time zone,NOT NULL,datetime,✅ Ok
+tarifas,fecha_hasta,Fin de vigencia de esta tarifa (NULL = vigente),timestamp with time zone,NULL,Optional[datetime],✅ Ok
+tarifas,created_at,Fecha de creación del registro de tarifa,timestamp with time zone,NULL,datetime,✅ Ok
+tema_especialidad,id,null,integer,NOT NULL,int,✅ Ok
+tema_especialidad,fk_tema,null,integer,NOT NULL,null,❌ Falta
+tema_especialidad,fk_especialidad,null,integer,NOT NULL,null,❌ Falta
+tema_especialidad,created_at,null,timestamp with time zone,NULL,null,❌ Falta
+tema_especialidad,prio_tema_rela,"Prioridad de esta especialidad para abordar el tema (1 = principal, 2 = complementaria, 3 = secundaria)",integer,NULL,null,❌ Falta
+temas,id_tema,null,integer,NOT NULL,null,❌ Falta
+temas,tema,null,text,NOT NULL,null,❌ Falta
+temas,descripcion_tema,null,text,NULL,null,❌ Falta
+temas,aplica,"Indica si Zenda puede asistir en este tema. Si es FALSE, implica que cae fuera de su incumbencia y se activará una pauta de excusa",boolean,NULL,null,❌ Falta
+temas,grupo_tema,null,text,NULL,null,❌ Falta
+temas,prio,null,integer,NULL,null,❌ Falta
+tokens,id_token,null,uuid,NOT NULL,UUID,✅ Ok
+tokens,id_cliente,null,uuid,NOT NULL,UUID,✅ Ok
+tokens,id_origen,null,text,NOT NULL,str,✅ Ok
+tokens,tokens,null,integer,NOT NULL,int,✅ Ok
+tokens,fecha,null,timestamp without time zone,NULL,datetime,✅ Ok

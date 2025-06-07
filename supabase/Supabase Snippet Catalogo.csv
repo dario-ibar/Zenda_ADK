@@ -1,0 +1,99 @@
+id,nombre_logico,valor,descripcion,metadata,activo,created_at,tabla_destino,campo_destino
+1,tipo_ctacte,consumo,Consumo de tokens por uso del sistema,{},true,2025-04-24 23:01:16.647879+00,ctacte,tipo
+2,tipo_ctacte,carga,Carga de tokens al cliente,{},true,2025-04-24 23:01:16.647879+00,ctacte,tipo
+3,tipo_ctacte,cred_ref,Crédito por referido,{},true,2025-04-24 23:01:16.647879+00,ctacte,tipo
+4,tipo_ctacte,ajuste,Ajuste manual de saldo,{},true,2025-04-24 23:01:16.647879+00,ctacte,tipo
+5,tipo_entidad,hermano,Hermano del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+6,tipo_entidad,hermana,Hermana del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+7,tipo_entidad,padre,Padre del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+8,tipo_entidad,madre,Madre del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+9,tipo_entidad,esposa,Esposa del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+10,tipo_entidad,pareja,Pareja no formal,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+11,tipo_entidad,hijo,Hijo del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+12,tipo_entidad,hija,Hija del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+13,tipo_entidad,novio,Novio del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+14,tipo_entidad,novia,Novia del cliente,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+15,tipo_entidad,amigo,Amigo cercano,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+16,tipo_entidad,colega,Colega laboral,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+17,tipo_entidad,jefe,Jefe o supervisor,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+18,tipo_entidad,empresa,Empresa con relación directa,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+19,tipo_entidad,contacto_emergencia,Contacto de emergencia,{},true,2025-04-25 01:49:27.801766+00,entidades,tipo_entidad
+20,estado_confirmacion,detectado,Detectado por el sistema,{},true,2025-04-25 01:49:27.801766+00,null,null
+21,estado_confirmacion,confirmado,Confirmado por el usuario,{},true,2025-04-25 01:49:27.801766+00,null,null
+22,estado_confirmacion,descartado,Descartado como válido,{},true,2025-04-25 01:49:27.801766+00,null,null
+23,canal_tipo,B2B,Canal Business to Business,{},true,2025-04-25 02:05:33.592422+00,null,null
+24,canal_tipo,B2C,Canal Business to Consumer,{},true,2025-04-25 02:05:33.592422+00,null,null
+25,canal_tipo,redes,Redes sociales,{},true,2025-04-25 02:05:33.592422+00,null,null
+26,canal_tipo,referral,Clientes referidos por otros,{},true,2025-04-25 02:05:33.592422+00,null,null
+27,canal_tipo,partners,Socios o partners estratégicos,{},true,2025-04-25 02:05:33.592422+00,null,null
+28,canal_tipo,influencers,Campañas con influencers,{},true,2025-04-25 02:05:33.592422+00,null,null
+29,canal_tipo,AdsGO,Publicidad paga en Google Ads,{},true,2025-04-25 02:05:33.592422+00,null,null
+30,canal_tipo,AdsFB,Publicidad paga en Facebook Ads,{},true,2025-04-25 02:05:33.592422+00,null,null
+31,canal_tipo,AdsIG,Publicidad paga en Instagram Ads,{},true,2025-04-25 02:05:33.592422+00,null,null
+32,canal_tipo,AdsTT,Publicidad paga en TikTok Ads,{},true,2025-04-25 02:05:33.592422+00,null,null
+33,moneda,ARS,Pesos argentinos,{},true,2025-04-25 02:05:33.592422+00,null,null
+34,moneda,USD,Dólares estadounidenses,{},true,2025-04-25 02:05:33.592422+00,null,null
+35,moneda,ZENDAS,Créditos propios del sistema Zenda,{},true,2025-04-25 02:05:33.592422+00,null,null
+36,categ_pauta,alcance,Pauta relacionada con el alcance de la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+37,categ_pauta,alivia,Pauta orientada a aliviar al cliente,{},true,2025-04-25 02:19:26.660522+00,null,null
+38,categ_pauta,barrera,Pauta que identifica o maneja barreras,{},true,2025-04-25 02:19:26.660522+00,null,null
+39,categ_pauta,compet,Pauta relacionada con competencias,{},true,2025-04-25 02:19:26.660522+00,null,null
+40,categ_pauta,pregunta,Pauta que implica una pregunta al cliente,{},true,2025-04-25 02:19:26.660522+00,null,null
+41,categ_pauta,tecnica,Pauta que aplica una técnica específica,{},true,2025-04-25 02:19:26.660522+00,null,null
+42,categ_pauta,sesion,Pauta que estructura la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+43,etapa_pauta,inicio,Etapa inicial de la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+44,etapa_pauta,exploración,Etapa de exploración de la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+45,etapa_pauta,acciones,Etapa de acciones en la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+46,etapa_pauta,cierre,Etapa de cierre de la sesión,{},true,2025-04-25 02:19:26.660522+00,null,null
+47,estado_cliente,activo,Cliente actualmente activo,{},true,2025-04-25 02:51:55.8101+00,null,null
+48,estado_cliente,inactivo,Cliente inactivo o sin uso reciente,{},true,2025-04-25 02:51:55.8101+00,null,null
+49,estado_cliente,referente,Cliente que refiere a otros,{},true,2025-04-25 02:51:55.8101+00,null,null
+50,estado_cliente,satisfecho,Cliente con experiencia positiva,{},true,2025-04-25 02:51:55.8101+00,null,null
+51,estado_cliente,insatisfecho,Cliente con experiencia negativa,{},true,2025-04-25 02:51:55.8101+00,null,null
+52,actor_bitacora,USER,El usuario o cliente final,{},true,2025-04-25 02:59:37.826574+00,null,null
+53,actor_bitacora,AGENTE,El agente o modelo que responde,{},true,2025-04-25 02:59:37.826574+00,null,null
+54,actor_bitacora,TOOL,Una herramienta invocada por el agente o el sistema,{},true,2025-04-25 02:59:37.826574+00,null,null
+55,event_type_bitacora,USER_MESSAGE,Mensaje enviado por el usuario,{},true,2025-04-25 02:59:37.826574+00,null,null
+56,event_type_bitacora,AGENT_RESPONSE,Respuesta del agente,{},true,2025-04-25 02:59:37.826574+00,null,null
+57,event_type_bitacora,TOOL_CALL,Invocación a una herramienta externa,{},true,2025-04-25 02:59:37.826574+00,null,null
+58,event_type_bitacora,SYSTEM_EVENT,Evento generado por el sistema,{},true,2025-04-25 02:59:37.826574+00,null,null
+59,status_evento,success,Evento procesado correctamente,{},true,2025-04-25 02:59:37.826574+00,null,null
+60,status_evento,failure,Evento con error o fallo,{},true,2025-04-25 02:59:37.826574+00,null,null
+61,status_evento,warning,Evento con advertencias,{},true,2025-04-25 02:59:37.826574+00,null,null
+62,status_evento,pending,Evento pendiente o en proceso,{},true,2025-04-25 02:59:37.826574+00,null,null
+63,tipo_fallo_qa,omision,Omisión de aplicar la pauta,{},true,2025-04-25 03:09:13.171705+00,null,null
+64,tipo_fallo_qa,error_semantico,Error en el sentido o contenido,{},true,2025-04-25 03:09:13.171705+00,null,null
+65,tipo_fallo_qa,tono_inadecuado,Tono inadecuado para la situación,{},true,2025-04-25 03:09:13.171705+00,null,null
+66,tipo_fallo_qa,falta_profundizacion,Falta de profundidad en la respuesta,{},true,2025-04-25 03:09:13.171705+00,null,null
+67,tipo_fallo_qa,no_respondio,El agente no respondió,{},true,2025-04-25 03:09:13.171705+00,null,null
+68,tipo_fallo_qa,otro,Otro tipo de fallo,{},true,2025-04-25 03:09:13.171705+00,null,null
+69,modelo_qa,GPT4,Evaluador basado en GPT-4,{},true,2025-04-25 03:09:13.171705+00,null,null
+70,modelo_qa,Gemini,Evaluador basado en Gemini,{},true,2025-04-25 03:09:13.171705+00,null,null
+71,modelo_qa,Humano,Evaluación realizada por humano,{},true,2025-04-25 03:09:13.171705+00,null,null
+72,modelo_qa,QA_Lite,Evaluación automática liviana,{},true,2025-04-25 03:09:13.171705+00,null,null
+73,modelo_qa,QA_Pro,Evaluación profunda o experta,{},true,2025-04-25 03:09:13.171705+00,null,null
+74,modo_asistencia,Especialidad,Asistencia desde una especialidad concreta,{},true,2025-04-25 03:31:46.23007+00,null,null
+75,modo_asistencia,Rotativo,Atención rotativa entre distintos agentes,{},true,2025-04-25 03:31:46.23007+00,null,null
+76,modo_asistencia,Integral,Enfoque integral multidisciplinario,{},true,2025-04-25 03:31:46.23007+00,null,null
+77,modo_asistencia,Hub,Derivación centralizada a diferentes especialidades,{},true,2025-04-25 03:31:46.23007+00,null,null
+78,modo_asistencia,Rapido,Asistencia rápida o express,{},true,2025-04-25 03:31:46.23007+00,null,null
+79,modo_comunicacion,texto,Comunicación por texto,{},true,2025-04-25 03:31:46.23007+00,null,null
+80,modo_comunicacion,voz,Comunicación por voz,{},true,2025-04-25 03:31:46.23007+00,null,null
+81,modo_comunicacion,video,Comunicación por videollamada,{},true,2025-04-25 03:31:46.23007+00,null,null
+82,modo_comunicacion,mixto,Combinación de varios modos de comunicación,{},true,2025-04-25 03:31:46.23007+00,null,null
+83,modo_comunicacion,imagen,Intercambio de imágenes,{},true,2025-04-25 03:31:46.23007+00,null,null
+84,modo_comunicacion,artefactos,"Intercambio o análisis de artefactos (ej.: PDFs, planillas, audios, etc.)",{},true,2025-04-25 03:31:46.23007+00,null,null
+85,tipo_entidad,Jargon,Término o jerga específica utilizada por el cliente o en su contexto.,{},true,2025-05-05 14:58:00.756492+00,entidades,tipo_entidad
+86,tipo_entidad,Concepto,"Concepto teórico, metodología o marco relevante mencionado.",{},true,2025-05-05 14:58:00.756492+00,entidades,tipo_entidad
+87,tipo_entidad,ProyectoCliente,"Nombre de un proyecto, iniciativa o meta específica del cliente.",{},true,2025-05-05 14:58:00.756492+00,entidades,tipo_entidad
+88,tipo_entidad,LugarImportante,Lugar físico o abstracto relevante mencionado por el cliente.,{},true,2025-05-05 14:58:00.756492+00,entidades,tipo_entidad
+89,tipo_entidad,EventoRelevante,Suceso o evento significativo en la historia del cliente.,{},true,2025-05-05 14:58:00.756492+00,entidades,tipo_entidad
+123,genero,M,Masculino,{},true,2025-05-27 18:21:14.448268+00,clientes,genero
+124,genero,F,Femenino,{},true,2025-05-27 18:21:14.448268+00,clientes,genero
+125,genero,X,Otro / No binario,{},true,2025-05-27 18:21:14.448268+00,clientes,genero
+126,pais,Argentina,Argentina,{},true,2025-05-27 18:21:14.448268+00,clientes,pais
+127,pais,Uruguay,Uruguay,{},true,2025-05-27 18:21:14.448268+00,clientes,pais
+128,pais,México,México,{},true,2025-05-27 18:21:14.448268+00,clientes,pais
+129,estado_arg,Buenos Aires,Provincia de Buenos Aires,{},true,2025-05-27 18:21:14.448268+00,clientes,estado
+130,estado_arg,CABA,Ciudad Autónoma de Buenos Aires,{},true,2025-05-27 18:21:14.448268+00,clientes,estado
+131,estado_arg,Santa Fe,Provincia de Santa Fe,{},true,2025-05-27 18:21:14.448268+00,clientes,estado
